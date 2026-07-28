@@ -49,7 +49,7 @@ final class LocalizationRuntimeTests: XCTestCase {
             displayName: "Codex",
             version: "1",
             bundleURL: URL(fileURLWithPath: "/tmp/Codex.app"),
-            executableURL: URL(fileURLWithPath: "/bin/true"),
+            executableURL: URL(fileURLWithPath: "/usr/bin/true"),
             bundleIdentifier: "com.example.codex"
         )
     }
