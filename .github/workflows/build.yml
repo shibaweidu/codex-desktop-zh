@@ -57,7 +57,20 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Run Swift tests on host
-        run: bash scripts/test-macos.sh
+        run: |
+          set +e
+          bash scripts/test-macos.sh 2>&1 | tee swift-test.log
+          status=${PIPESTATUS[0]}
+          set -e
+          if [ "$status" -ne 0 ]; then
+            {
+              echo '### Swift test failure'
+              echo '```text'
+              tail -n 200 swift-test.log
+              echo '```'
+            } >> "$GITHUB_STEP_SUMMARY"
+            exit "$status"
+          fi
       - name: Run CLI self-test on host
         run: CODEX_ZH_SHARED_DIR="$PWD/shared" swift run --package-path macos CodexZhLauncherMac --self-test
       - name: Run CLI diagnostics on host
