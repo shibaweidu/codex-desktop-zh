@@ -1,0 +1,81 @@
+name: 启动或汉化问题
+description: 报告启动失败、中文界面未生效或其他可复现问题
+title: "[Bug] "
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: |
+        请不要粘贴账号、令牌、对话内容或未脱敏的项目路径。安全漏洞请按照 SECURITY.md 私下报告。
+
+  - type: input
+    id: launcher-version
+    attributes:
+      label: 工具版本
+      placeholder: 例如 0.5.0
+    validations:
+      required: true
+
+  - type: input
+    id: codex-version
+    attributes:
+      label: Codex Desktop 版本
+      placeholder: 可通过 --diagnostics 查看
+    validations:
+      required: true
+
+  - type: dropdown
+    id: install-type
+    attributes:
+      label: Codex 安装类型
+      options:
+        - Microsoft Store
+        - 便携版 Codex.exe
+        - 便携版 ChatGPT.exe
+        - 其他
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: 复现步骤
+      description: 从启动工具开始，按顺序描述每一步。
+      placeholder: |
+        1. 启动工具
+        2. 点击“汉化并启动”
+        3. 出现……
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: 预期结果
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: 实际结果
+    validations:
+      required: true
+
+  - type: textarea
+    id: diagnostics
+    attributes:
+      label: 诊断输出和脱敏日志
+      description: 粘贴 --diagnostics 输出和相关 launcher.log 行，先删除隐私信息。
+      render: text
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: 提交前检查
+      options:
+        - label: 我使用的是最新 Release。
+          required: true
+        - label: 我已确认内容不包含账号、令牌、对话或其他敏感信息。
+          required: true

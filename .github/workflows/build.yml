@@ -1,0 +1,77 @@
+name: Build and test
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build release
+        shell: powershell
+        run: .\build.ps1 -Configuration Release
+      - name: Run localization self-test
+        shell: powershell
+        run: |
+          $exe = '.\dist\Codex-Zh-Launcher-Windows-x64.exe'
+          $process = Start-Process -FilePath $exe -ArgumentList '--self-test' -Wait -PassThru -WindowStyle Hidden -RedirectStandardOutput self-test.out -RedirectStandardError self-test.err
+          Get-Content self-test.out
+          if ($process.ExitCode -ne 0) { Get-Content self-test.err; throw "Self-test failed: $($process.ExitCode)" }
+      - name: Run diagnostics smoke test
+        shell: powershell
+        run: |
+          $exe = '.\dist\Codex-Zh-Launcher-Windows-x64.exe'
+          $process = Start-Process -FilePath $exe -ArgumentList '--diagnostics' -Wait -PassThru -WindowStyle Hidden -RedirectStandardOutput diagnostics.out -RedirectStandardError diagnostics.err
+          Get-Content diagnostics.out
+          if ($process.ExitCode -notin 0, 2) { Get-Content diagnostics.err; throw "Diagnostics failed: $($process.ExitCode)" }
+          if ((Get-Content diagnostics.out -Raw) -notmatch 'codex=(found|not-found)') { throw 'Diagnostics output is incomplete.' }
+      - name: Run isolated shutdown tests
+        shell: powershell
+        run: .\test-shutdown.ps1
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows-${{ github.sha }}
+          path: dist/Codex-Zh-Launcher-Windows-x64.exe
+          if-no-files-found: error
+
+  macos:
+    name: macOS ${{ matrix.arch }}
+    runs-on: macos-14
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: arm64
+            asset: Codex-Zh-Launcher-macOS-arm64.zip
+          - arch: x86_64
+            asset: Codex-Zh-Launcher-macOS-x64.zip
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run Swift tests on host
+        run: bash scripts/test-macos.sh
+      - name: Run CLI self-test on host
+        run: CODEX_ZH_SHARED_DIR="$PWD/shared" swift run --package-path macos CodexZhLauncherMac --self-test
+      - name: Run CLI diagnostics on host
+        run: |
+          set +e
+          CODEX_ZH_SHARED_DIR="$PWD/shared" swift run --package-path macos CodexZhLauncherMac --diagnostics | tee diagnostics.out
+          status=${PIPESTATUS[0]}
+          set -e
+          test "$status" -eq 0 -o "$status" -eq 2
+          grep -Eq 'codex=(found|not-found)' diagnostics.out
+      - name: Build and verify app bundle
+        run: bash scripts/build-macos.sh '${{ matrix.arch }}'
+      - uses: actions/upload-artifact@v4
+        with:
+          name: macos-${{ matrix.arch }}-${{ github.sha }}
+          path: dist/${{ matrix.asset }}
+          if-no-files-found: error

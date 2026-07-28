@@ -1,0 +1,57 @@
+name: Codex 版本兼容
+description: 报告 Codex 更新后出现的接口变化或未翻译菜单
+title: "[Compatibility] Codex "
+labels:
+  - compatibility
+body:
+  - type: input
+    id: codex-version
+    attributes:
+      label: Codex Desktop 完整版本号
+      placeholder: 例如 26.721.4979.0
+    validations:
+      required: true
+
+  - type: input
+    id: launcher-version
+    attributes:
+      label: 汉化工具版本
+      placeholder: 例如 0.5.0
+    validations:
+      required: true
+
+  - type: dropdown
+    id: result
+    attributes:
+      label: 未生效环节
+      options:
+        - 中文界面
+        - 原生菜单
+        - 中文界面和原生菜单
+        - 启动或关闭流程
+    validations:
+      required: true
+
+  - type: textarea
+    id: labels
+    attributes:
+      label: 未翻译菜单标签
+      description: 请逐行填写日志中 untranslated 数组里的英文标签。
+      render: text
+
+  - type: textarea
+    id: log
+    attributes:
+      label: 脱敏日志
+      description: 请包含 locale.detail、menu.detail 和 launch.complete，删除隐私信息。
+      render: text
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: privacy
+    attributes:
+      label: 隐私确认
+      options:
+        - label: 我已删除账号、令牌、对话内容和不希望公开的本机路径。
+          required: true

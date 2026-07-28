@@ -1,0 +1,16 @@
+dist/
+obj/
+.vs/
+.idea/
+TestResults/
+*.user
+*.suo
+*.log
+*.tmp
+*.pdb
+*.ilk
+.DS_Store
+Thumbs.db
+macos/.build/
+macos/.swiftpm/
+macos/.artifacts/
