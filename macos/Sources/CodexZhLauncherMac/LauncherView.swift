@@ -20,6 +20,15 @@ struct LauncherView: View {
         } message: {
             Text("Codex 正在执行的任务会被中断，未保存的输入可能丢失。工具会先请求正常退出，等待 5 秒后才强制终止仍在运行且路径验证通过的进程。")
         }
+        .alert("发现新版本", isPresented: $model.showsUpdateAlert) {
+            Button("稍后", role: .cancel) {}
+            Button("打开下载页") { model.openAvailableUpdate() }
+        } message: {
+            Text(model.availableUpdate?.message ?? "GitHub Releases 中有可用的新版本。")
+        }
+        .sheet(isPresented: $model.showsAbout) {
+            AboutView(model: model)
+        }
     }
 
     private var header: some View {
@@ -33,6 +42,7 @@ struct LauncherView: View {
                     .foregroundStyle(.secondary)
             }
             Spacer()
+            iconButton("info.circle", help: "关于与更新") { model.showsAbout = true }
             iconButton("doc.badge.gearshape", help: "选择 Codex.app") { model.selectApplication() }
             iconButton("folder", help: "打开日志目录") { model.openLogFolder() }
         }

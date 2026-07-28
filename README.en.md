@@ -4,7 +4,7 @@ English | [简体中文](README.md)
 
 ![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS-5B8DEF)
 ![Architecture](https://img.shields.io/badge/architecture-x64%20%7C%20arm64-6D7280)
-![Version](https://img.shields.io/badge/version-v0.5.1-C4B5FD)
+![Version](https://img.shields.io/badge/version-v0.6.0-C4B5FD)
 ![License](https://img.shields.io/badge/license-MIT-31B77A)
 
 **Codex Desktop Chinese Localization Enhancer** is a Windows and macOS launcher for enabling the Chinese UI and translating native Electron menus in Codex Desktop. It supports Microsoft Store, portable, and macOS App Bundle installations, verified process shutdown, and automatic restart in Chinese mode.
@@ -23,6 +23,8 @@ The tool does not unpack or replace `app.asar`, modify the Microsoft Store insta
 - Safely closes a running Codex instance before localization and restart
 - Revalidates the PID, executable path, and start time before termination
 - Provides compact dark WPF and SwiftUI interfaces with local diagnostic logs
+- Checks GitHub Releases at startup and only prompts before opening a new download
+- Provides an About view with version, update, support, and repository actions
 - Does not require administrator privileges or patch official app files
 
 ## Download and Usage
@@ -70,6 +72,12 @@ Both endpoints bind to `127.0.0.1`. No Codex installation files are changed.
 | Linux | Any | Not supported yet |
 
 Codex updates may change Electron arguments, settings contracts, or menu labels. Open a compatibility issue with the Codex version, diagnostics output, and a redacted launcher log when this happens.
+
+## Updates
+
+The launcher checks this repository's latest GitHub Release at startup and prompts before opening the download page. A manual check is also available in About. It never silently downloads or replaces the EXE or App Bundle.
+
+Update checks and download prompts work on macOS without an Apple Developer ID. Signing and notarization are still required for a dependable self-replacing updater, so the current ad-hoc signed macOS build does not overwrite its own `.app`.
 
 ## Build and Test
 

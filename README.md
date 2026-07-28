@@ -4,14 +4,14 @@
 
 ![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS-5B8DEF)
 ![Architecture](https://img.shields.io/badge/architecture-x64%20%7C%20arm64-6D7280)
-![Version](https://img.shields.io/badge/version-v0.5.1-C4B5FD)
+![Version](https://img.shields.io/badge/version-v0.6.0-C4B5FD)
 ![License](https://img.shields.io/badge/license-MIT-31B77A)
 
 **Codex Desktop 中文汉化增强工具**是一款面向 Windows 和 macOS 的 Codex 汉化启动器。它支持 Microsoft Store、便携版和 macOS App Bundle，可启用中文界面、翻译 Electron 原生菜单，并在 Codex 已运行时安全关闭后以中文模式重新启动。
 
 项目不解包、不替换 `app.asar`，不修改 Microsoft Store 安装目录，也不读取 Codex 账号、令牌或项目文件。
 
-当前版本：`0.5.1`
+当前版本：`0.6.0`
 
 ## 主要功能
 
@@ -25,6 +25,8 @@
 - Codex 已运行时显示“关闭并汉化重启”
 - 先请求正常退出，5 秒后仅强制终止经过路径验证的剩余进程
 - 深色 WPF / SwiftUI 界面、实时状态和本地诊断日志
+- 启动时自动检查 GitHub Releases，新版本仅提示、不静默安装
+- 关于界面提供版本、手动检查更新、反馈支持和项目仓库入口
 - 不要求管理员权限，不修改 Codex 官方文件
 
 ## 下载与使用
@@ -193,6 +195,14 @@ macOS 日志位于：
 日志包含 Codex 安装类型、版本、汉化验证结果和进程关闭统计。提交 Issue 前应检查并移除不希望公开的本机路径或其他信息。
 
 ## 常见问题
+
+### 工具会自动更新吗？
+
+工具会在启动后检查本仓库的最新 GitHub Release，发现新版时询问是否打开下载页面，也可以在“关于”界面手动检查。当前版本不会静默下载或覆盖正在使用的 EXE / App Bundle。
+
+### macOS 没有 Apple Developer ID 签名还能检查更新吗？
+
+可以。更新检查和下载提示不依赖 Apple Developer ID。未签名和未公证主要影响自动替换后的首次打开与系统信任，因此当前 macOS 版本只提供可信来源提示，不自动覆盖 `.app`。
 
 ### Codex 更新后还可以继续使用吗？
 

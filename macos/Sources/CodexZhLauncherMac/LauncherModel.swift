@@ -11,7 +11,7 @@ struct LogEntry: Identifiable {
 
 @MainActor
 final class LauncherModel: ObservableObject {
-    static let version = "0.5.1"
+    static let version = "0.6.0"
 
     @Published private(set) var install: CodexInstall?
     @Published private(set) var runningCount = 0
@@ -21,6 +21,11 @@ final class LauncherModel: ObservableObject {
     @Published private(set) var statusIsWarning = false
     @Published private(set) var entries: [LogEntry] = []
     @Published var showsRestartConfirmation = false
+    @Published var showsAbout = false
+    @Published var showsUpdateAlert = false
+    @Published private(set) var checkingForUpdates = false
+    @Published private(set) var updateStatus = "尚未检查更新"
+    @Published private(set) var availableUpdate: UpdateCheckResult?
 
     private let discovery: CodexDiscovery
     private let processService: DarwinProcessService
@@ -43,6 +48,7 @@ final class LauncherModel: ObservableObject {
                 self.refreshRunningState()
             }
         }
+        checkForUpdates(showPrompt: true)
     }
 
     deinit { pollingTask?.cancel() }
@@ -147,6 +153,38 @@ final class LauncherModel: ObservableObject {
         } catch {
             setError("无法打开日志目录：\(error.localizedDescription)")
         }
+    }
+
+    func checkForUpdates(showPrompt: Bool = false) {
+        guard !checkingForUpdates else { return }
+        checkingForUpdates = true
+        updateStatus = "正在连接 GitHub Releases..."
+        Task {
+            do {
+                let result = try await GitHubUpdateChecker().check(currentVersion: Self.version)
+                availableUpdate = result.updateAvailable ? result : nil
+                updateStatus = result.message
+                logger.write("update.check \(result.message)")
+                if showPrompt && result.updateAvailable { showsUpdateAlert = true }
+            } catch {
+                availableUpdate = nil
+                updateStatus = "检查失败：\(error.localizedDescription)"
+                logger.write("update.check.failed \(error.localizedDescription)")
+            }
+            checkingForUpdates = false
+        }
+    }
+
+    func openAvailableUpdate() {
+        NSWorkspace.shared.open(availableUpdate?.releaseURL ?? GitHubUpdateChecker.latestReleaseURL)
+    }
+
+    func openRepository() {
+        NSWorkspace.shared.open(GitHubUpdateChecker.repositoryURL)
+    }
+
+    func openFeedback() {
+        NSWorkspace.shared.open(GitHubUpdateChecker.feedbackURL)
     }
 
     private func launch(locale: String) {

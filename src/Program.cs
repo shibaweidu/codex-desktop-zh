@@ -8,8 +8,8 @@ using System.Windows;
 [assembly: System.Reflection.AssemblyCompany("Codex Localization Enhancer Community")]
 [assembly: System.Reflection.AssemblyProduct("Codex 汉化增强工具")]
 [assembly: System.Reflection.AssemblyCopyright("Copyright 2026")]
-[assembly: System.Reflection.AssemblyVersion("0.5.1.0")]
-[assembly: System.Reflection.AssemblyFileVersion("0.5.1.0")]
+[assembly: System.Reflection.AssemblyVersion("0.6.0.0")]
+[assembly: System.Reflection.AssemblyFileVersion("0.6.0.0")]
 
 namespace CodexZhLauncher
 {
@@ -53,6 +53,7 @@ namespace CodexZhLauncher
             if (command == "--self-test")
             {
                 Output(LocalizationScripts.SelfTest());
+                Output(UpdateChecker.SelfTest());
                 return;
             }
 
@@ -80,7 +81,7 @@ namespace CodexZhLauncher
 
         private static void PrintDiagnostics(CodexInstall install)
         {
-            Output("Codex Localization Enhancer 0.5.1");
+            Output("Codex Localization Enhancer " + AppInfo.Version);
             Output("os=" + Environment.OSVersion.VersionString);
             Output("64bit=" + Environment.Is64BitOperatingSystem);
             if (install == null)

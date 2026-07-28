@@ -50,6 +50,7 @@ namespace CodexZhLauncher
         private int missingPollCount;
         private int lastRunningCount = -1;
         private string shutdownFailureDetail;
+        private bool updatePromptShown;
 
         [DllImport("dwmapi.dll")]
         private static extern int DwmSetWindowAttribute(
@@ -83,6 +84,7 @@ namespace CodexZhLauncher
                 AppendLog("工具已启动，正在检测 Codex Desktop。", TextSecondary);
                 await DetectInstallAsync();
                 stateTimer.Start();
+                await CheckForUpdatesOnStartupAsync();
             };
             Closed += delegate { stateTimer.Stop(); };
         }
@@ -150,15 +152,27 @@ namespace CodexZhLauncher
             Grid.SetColumn(title, 1);
             grid.Children.Add(title);
 
-            var version = new TextBlock
+            var tools = new StackPanel
             {
-                Text = "v0.5.1",
-                Foreground = TextSecondary,
-                FontSize = 12,
+                Orientation = Orientation.Horizontal,
                 VerticalAlignment = VerticalAlignment.Center
             };
-            Grid.SetColumn(version, 2);
-            grid.Children.Add(version);
+            tools.Children.Add(new TextBlock
+            {
+                Text = "v" + AppInfo.Version,
+                Foreground = TextSecondary,
+                FontSize = 12,
+                Margin = new Thickness(0, 0, 9, 0),
+                VerticalAlignment = VerticalAlignment.Center
+            });
+            var aboutButton = BuildIconButton("\uE946", "关于与更新");
+            aboutButton.Click += delegate
+            {
+                new AboutWindow(this).ShowDialog();
+            };
+            tools.Children.Add(aboutButton);
+            Grid.SetColumn(tools, 2);
+            grid.Children.Add(tools);
             return grid;
         }
 
@@ -679,27 +693,37 @@ namespace CodexZhLauncher
         {
             try
             {
-                using (var stream = typeof(MainWindow).Assembly.GetManifestResourceStream("CodexZhLauncher.AppIcon.ico"))
-                {
-                    if (stream == null) return;
-                    var decoder = BitmapDecoder.Create(
-                        stream,
-                        BitmapCreateOptions.PreservePixelFormat,
-                        BitmapCacheOption.OnLoad);
-                    BitmapFrame largest = null;
-                    foreach (var frame in decoder.Frames)
-                    {
-                        if (largest == null || frame.PixelWidth > largest.PixelWidth) largest = frame;
-                    }
-                    if (largest == null) return;
-                    largest.Freeze();
-                    Icon = largest;
-                    logoImage.Source = largest;
-                }
+                var icon = AppIcon.Load();
+                if (icon == null) return;
+                Icon = icon;
+                logoImage.Source = icon;
             }
             catch (Exception ex)
             {
                 AppLog.Write("icon.load.failed " + ex.Message);
+            }
+        }
+
+        private async Task CheckForUpdatesOnStartupAsync()
+        {
+            try
+            {
+                var result = await UpdateChecker.CheckAsync(AppInfo.Version);
+                AppLog.Write("update.check " + result.Message);
+                if (!result.UpdateAvailable || updatePromptShown || !IsVisible) return;
+                updatePromptShown = true;
+                AppendLog(result.Message + "，可从 GitHub Releases 下载。", Restart);
+                var choice = MessageBox.Show(
+                    this,
+                    result.Message + "。\n\n是否打开下载页面？",
+                    "发现新版本",
+                    MessageBoxButton.YesNo,
+                    MessageBoxImage.Information);
+                if (choice == MessageBoxResult.Yes) AppInfo.OpenUrl(result.ReleaseUrl);
+            }
+            catch (Exception ex)
+            {
+                AppLog.Write("update.check.failed " + ex.Message);
             }
         }
 

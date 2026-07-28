@@ -2,6 +2,18 @@
 
 本项目遵循 [Semantic Versioning](https://semver.org/)。
 
+## [0.6.0] - 2026-07-29
+
+### Added
+
+- Windows 与 macOS 启动后后台检查 GitHub Releases，发现新版时显示下载提示
+- 关于界面显示当前版本、检查更新、反馈支持和 GitHub 仓库入口
+- 更新响应版本比较、Release 地址校验和离线自动测试
+
+### Security
+
+- 首期更新功能不静默下载或覆盖程序，只打开固定仓库的 GitHub Release 页面
+
 ## [0.5.1] - 2026-07-29
 
 ### Fixed
