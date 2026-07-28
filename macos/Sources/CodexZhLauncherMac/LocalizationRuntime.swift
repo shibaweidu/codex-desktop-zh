@@ -46,8 +46,10 @@ struct LocalizationRuntime {
         report.started = true
         emit("Codex 已启动，正在连接本地汉化接口。", progress)
 
-        async let localeResult = applyLocale(port: report.rendererPort, locale: locale)
-        async let menuResult = applyMenuIfNeeded(port: report.inspectorPort, locale: locale)
+        let rendererPort = report.rendererPort
+        let inspectorPort = report.inspectorPort
+        async let localeResult = applyLocale(port: rendererPort, locale: locale)
+        async let menuResult = applyMenuIfNeeded(port: inspectorPort, locale: locale)
 
         do {
             report.localeDetail = try await localeResult
