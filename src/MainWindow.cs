@@ -73,6 +73,7 @@ namespace CodexZhLauncher
             UseLayoutRounding = true;
             SnapsToDevicePixels = true;
             Content = BuildLayout();
+            ApplyToolIcon();
 
             stateTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(1.5) };
             stateTimer.Tick += async delegate { await PollStateAsync(); };
@@ -129,8 +130,8 @@ namespace CodexZhLauncher
 
             logoImage = new Image
             {
-                Width = 34,
-                Height = 34,
+                Width = 40,
+                Height = 40,
                 Stretch = Stretch.Uniform,
                 Margin = new Thickness(0, 0, 13, 0),
                 VerticalAlignment = VerticalAlignment.Center
@@ -151,7 +152,7 @@ namespace CodexZhLauncher
 
             var version = new TextBlock
             {
-                Text = "v0.5.0",
+                Text = "v0.5.1",
                 Foreground = TextSecondary,
                 FontSize = 12,
                 VerticalAlignment = VerticalAlignment.Center
@@ -415,7 +416,6 @@ namespace CodexZhLauncher
                 missingPollCount = 0;
                 if (currentInstall != null)
                 {
-                    ApplyOfficialIcon(currentInstall);
                     AppendLog("已检测到 " + currentInstall.DisplayName + "，包版本 " + currentInstall.Version + "。", Accent);
                 }
                 else
@@ -664,7 +664,6 @@ namespace CodexZhLauncher
             {
                 currentInstall = CodexDiscovery.UsePortableExecutable(dialog.FileName);
                 AppendLog("已选择便携版：" + dialog.FileName, Accent);
-                ApplyOfficialIcon(currentInstall);
                 UpdatePresentation();
             }
             catch (Exception ex)
@@ -676,64 +675,32 @@ namespace CodexZhLauncher
             await Task.FromResult(0);
         }
 
-        private void ApplyOfficialIcon(CodexInstall install)
+        private void ApplyToolIcon()
         {
-            if (install == null || String.IsNullOrWhiteSpace(install.InstallLocation)) return;
-            var candidates = new[]
+            try
             {
-                System.IO.Path.Combine(install.InstallLocation, "app", "resources", "icon-chatgpt.ico"),
-                System.IO.Path.Combine(install.InstallLocation, "assets", "Square44x44Logo.targetsize-256_altform-unplated.png"),
-                System.IO.Path.Combine(install.InstallLocation, "assets", "Square44x44Logo.png")
-            };
-            foreach (var candidate in candidates)
-            {
-                try
+                using (var stream = typeof(MainWindow).Assembly.GetManifestResourceStream("CodexZhLauncher.AppIcon.ico"))
                 {
-                    if (!File.Exists(candidate)) continue;
-                    var image = BitmapFrame.Create(
-                        new Uri(candidate, UriKind.Absolute),
+                    if (stream == null) return;
+                    var decoder = BitmapDecoder.Create(
+                        stream,
                         BitmapCreateOptions.PreservePixelFormat,
                         BitmapCacheOption.OnLoad);
-                    image.Freeze();
-                    var tinted = TintImage(image, Color.FromRgb(0xC4, 0xB5, 0xFD));
-                    Icon = tinted;
-                    logoImage.Source = tinted;
-                    return;
-                }
-                catch
-                {
+                    BitmapFrame largest = null;
+                    foreach (var frame in decoder.Frames)
+                    {
+                        if (largest == null || frame.PixelWidth > largest.PixelWidth) largest = frame;
+                    }
+                    if (largest == null) return;
+                    largest.Freeze();
+                    Icon = largest;
+                    logoImage.Source = largest;
                 }
             }
-        }
-
-        private static BitmapSource TintImage(BitmapSource source, Color tint)
-        {
-            var converted = new FormatConvertedBitmap(source, PixelFormats.Bgra32, null, 0);
-            var stride = converted.PixelWidth * 4;
-            var pixels = new byte[stride * converted.PixelHeight];
-            converted.CopyPixels(pixels, stride, 0);
-
-            for (var offset = 0; offset < pixels.Length; offset += 4)
+            catch (Exception ex)
             {
-                if (pixels[offset + 3] == 0) continue;
-                var luminance = (pixels[offset + 2] * 0.2126 + pixels[offset + 1] * 0.7152 + pixels[offset] * 0.0722) / 255.0;
-                var shade = 0.55 + luminance * 0.45;
-                pixels[offset] = (byte)Math.Min(255, Math.Round(tint.B * shade));
-                pixels[offset + 1] = (byte)Math.Min(255, Math.Round(tint.G * shade));
-                pixels[offset + 2] = (byte)Math.Min(255, Math.Round(tint.R * shade));
+                AppLog.Write("icon.load.failed " + ex.Message);
             }
-
-            var tinted = BitmapSource.Create(
-                converted.PixelWidth,
-                converted.PixelHeight,
-                converted.DpiX,
-                converted.DpiY,
-                PixelFormats.Bgra32,
-                null,
-                pixels,
-                stride);
-            tinted.Freeze();
-            return tinted;
         }
 
         private void SetBusy(bool value, string title, string detail)

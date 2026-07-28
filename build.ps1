@@ -10,7 +10,10 @@ $sourceDir = Join-Path $projectRoot 'src'
 $sharedDir = Join-Path $projectRoot 'shared'
 $manifestFile = Join-Path $sourceDir 'app.manifest'
 $outputDir = Join-Path $projectRoot 'dist'
+$intermediateDir = Join-Path $projectRoot 'obj'
 $outputFile = Join-Path $outputDir 'Codex-Zh-Launcher-Windows-x64.exe'
+$iconFile = Join-Path $intermediateDir 'AppIcon.ico'
+$iconGenerator = Join-Path $projectRoot 'scripts\generate-windows-icon.ps1'
 $frameworkRoot = Join-Path $env:WINDIR 'Microsoft.NET\Framework64\v4.0.30319'
 $compiler = Join-Path $frameworkRoot 'csc.exe'
 
@@ -19,6 +22,12 @@ if (-not (Test-Path -LiteralPath $compiler)) {
 }
 
 New-Item -ItemType Directory -Force -Path $outputDir | Out-Null
+New-Item -ItemType Directory -Force -Path $intermediateDir | Out-Null
+
+if (-not (Test-Path -LiteralPath $iconGenerator)) {
+    throw "Missing Windows icon generator: $iconGenerator"
+}
+& $iconGenerator -OutputPath $iconFile
 
 $references = @(
     (Join-Path $frameworkRoot 'WPF\PresentationFramework.dll'),
@@ -63,18 +72,9 @@ $compilerArgs = @(
     '/utf8output',
     '/codepage:65001',
     "/win32manifest:$manifestFile",
+    "/win32icon:$iconFile",
     "/out:$outputFile"
 )
-
-$codexPackage = Get-AppxPackage -Name 'OpenAI.Codex' -ErrorAction SilentlyContinue |
-    Sort-Object Version -Descending |
-    Select-Object -First 1
-if ($null -ne $codexPackage) {
-    $codexIcon = Join-Path $codexPackage.InstallLocation 'app\resources\icon-chatgpt.ico'
-    if (Test-Path -LiteralPath $codexIcon) {
-        $compilerArgs += "/win32icon:$codexIcon"
-    }
-}
 
 if ($Configuration -eq 'Release') {
     $compilerArgs += '/optimize+'
@@ -90,6 +90,7 @@ foreach ($reference in $references) {
 foreach ($resource in $sharedResources) {
     $compilerArgs += "/resource:$($resource.Path),$($resource.Name)"
 }
+$compilerArgs += "/resource:$iconFile,CodexZhLauncher.AppIcon.ico"
 $compilerArgs += $sourceFiles
 
 & $compiler $compilerArgs

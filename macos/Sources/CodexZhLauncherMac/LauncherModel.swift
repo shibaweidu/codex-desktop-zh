@@ -11,7 +11,7 @@ struct LogEntry: Identifiable {
 
 @MainActor
 final class LauncherModel: ObservableObject {
-    static let version = "0.5.0"
+    static let version = "0.5.1"
 
     @Published private(set) var install: CodexInstall?
     @Published private(set) var runningCount = 0
