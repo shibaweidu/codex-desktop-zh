@@ -95,8 +95,10 @@
     translateMenu(current);
     Menu.setApplicationMenu(current);
   }
+  var status = untranslated.length > 0 || !current || inspected === 0 ? 'partial' : 'ok';
   return JSON.stringify({
-    status: untranslated.length === 0 ? 'ok' : 'partial',
+    status: status,
+    reason: !current || inspected === 0 ? 'application-menu-empty' : '',
     changed: changed,
     inspected: inspected,
     untranslated: untranslated,

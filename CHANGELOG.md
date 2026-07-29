@@ -2,6 +2,15 @@
 
 本项目遵循 [Semantic Versioning](https://semver.org/)。
 
+## [0.7.4] - 2026-07-29
+
+### Fixed
+
+- macOS 枚举并探测 `page`、`iframe` 与 `webview` 调试目标，避免把空的外层窗口当作 Codex 实际界面
+- 写入语言设置时选择带 `electronBridge` 的目标，验证时选择含有实际页面文本的目标
+- 页面日志增加最终目标类型和探测文本长度，便于识别新版 Codex 的渲染结构变化
+- Electron 应用菜单为空时报告 `partial`，不再以零检查项误报菜单汉化完成
+
 ## [0.7.3] - 2026-07-29
 
 ### Fixed

@@ -129,7 +129,13 @@ struct LocalizationRuntime {
     }
 
     private func applyLocale(port: UInt16, locale: String) async throws -> String {
-        let target = try await devTools.waitForTarget(port: port, preferredType: "page", timeout: 25)
+        let selected = try await waitForRendererTarget(
+            port: port,
+            timeout: 25,
+            requireBridge: true,
+            requireContent: false
+        )
+        let target = selected.target
         guard let socket = target.webSocketDebuggerUrl else { throw RuntimeError.missingWebSocket }
         return try await devTools.evaluate(
             webSocketURL: socket,
@@ -156,7 +162,13 @@ struct LocalizationRuntime {
     }
 
     private func verifyLocale(port: UInt16, locale: String) async throws -> String {
-        let target = try await devTools.waitForTarget(port: port, preferredType: "page", timeout: 12)
+        let selected = try await waitForRendererTarget(
+            port: port,
+            timeout: 12,
+            requireBridge: false,
+            requireContent: true
+        )
+        let target = selected.target
         guard let socket = target.webSocketDebuggerUrl else { throw RuntimeError.missingWebSocket }
         let localeData = try JSONSerialization.data(withJSONObject: locale, options: [.fragmentsAllowed])
         let encoded = String(decoding: localeData, as: UTF8.self)
@@ -176,10 +188,87 @@ struct LocalizationRuntime {
           var documentLanguage = document.documentElement.lang || '';
           var languageMatches = documentLanguage.toLowerCase().indexOf(expectsChinese ? 'zh' : 'en') === 0;
           var markerMatches = expectsChinese ? (zhMatches > 0 && enMatches === 0) : enMatches > 0;
-          return JSON.stringify({ status: (languageMatches || markerMatches) ? 'ok' : 'partial', requested: requested, navigatorLanguage: navigator.language, documentLanguage: documentLanguage, textLength: text.length, zhMarkers: zhMatches, enMarkers: enMatches });
+          return JSON.stringify({ status: (languageMatches || markerMatches) ? 'ok' : 'partial', requested: requested, targetType: \(encodedTargetType(target.type)), navigatorLanguage: navigator.language, documentLanguage: documentLanguage, textLength: text.length, probeTextLength: \(selected.probe.textLength), zhMarkers: zhMatches, enMarkers: enMatches });
         })()
         """
         return try await devTools.evaluate(webSocketURL: socket, expression: script, awaitPromise: true) ?? ""
+    }
+
+    private func waitForRendererTarget(
+        port: UInt16,
+        timeout: TimeInterval,
+        requireBridge: Bool,
+        requireContent: Bool
+    ) async throws -> RendererSelection {
+        let deadline = Date().addingTimeInterval(timeout)
+        var best: RendererSelection?
+        var lastError: Error?
+        while Date() < deadline {
+            do {
+                let targets = try await devTools.listTargets(port: port)
+                    .filter { target in
+                        ["page", "iframe", "webview"].contains {
+                            target.type.caseInsensitiveCompare($0) == .orderedSame
+                        }
+                    }
+                    .sorted { rendererMetadataScore($0) > rendererMetadataScore($1) }
+                for target in targets {
+                    guard let socket = target.webSocketDebuggerUrl, !socket.isEmpty else { continue }
+                    do {
+                        let value = try await devTools.evaluate(
+                            webSocketURL: socket,
+                            expression: rendererProbeScript,
+                            awaitPromise: false
+                        ) ?? ""
+                        guard let probe = RendererProbe(json: value) else { continue }
+                        let selection = RendererSelection(target: target, probe: probe)
+                        if best == nil || probe.score > best!.probe.score { best = selection }
+                        let bridgeMatches = !requireBridge || probe.hasBridge
+                        let contentMatches = !requireContent || probe.textLength >= 40
+                        if bridgeMatches && contentMatches {
+                            logger.write("renderer.selected type=\(target.type) bridge=\(probe.hasBridge) text_length=\(probe.textLength) ready=\(probe.readyState)")
+                            return selection
+                        }
+                    } catch {
+                        lastError = error
+                    }
+                }
+            } catch {
+                lastError = error
+            }
+            await sleeper.sleep(seconds: 0.3)
+        }
+        if let best {
+            logger.write("renderer.fallback type=\(best.target.type) bridge=\(best.probe.hasBridge) text_length=\(best.probe.textLength)")
+            return best
+        }
+        let suffix = lastError.map { "：\($0.localizedDescription)" } ?? ""
+        throw RuntimeError.rendererTargetUnavailable(suffix)
+    }
+
+    private var rendererProbeScript: String {
+        """
+        (function () {
+          var text = document.body ? document.body.innerText || '' : '';
+          return JSON.stringify({ codexZhProbe: true, hasBridge: !!(window.electronBridge && typeof window.electronBridge.sendMessageFromView === 'function'), textLength: text.length, readyState: document.readyState || '', documentLanguage: document.documentElement.lang || '' });
+        })()
+        """
+    }
+
+    private func rendererMetadataScore(_ target: DevToolsTarget) -> Int {
+        var score = 0
+        if target.type.caseInsensitiveCompare("iframe") == .orderedSame ||
+            target.type.caseInsensitiveCompare("webview") == .orderedSame { score += 20 }
+        if let url = target.url, !url.isEmpty, url != "about:blank" { score += 10 }
+        if !target.title.isEmpty { score += 5 }
+        return score
+    }
+
+    private func encodedTargetType(_ type: String) -> String {
+        guard let data = try? JSONSerialization.data(withJSONObject: type, options: [.fragmentsAllowed]) else {
+            return "\"unknown\""
+        }
+        return String(decoding: data, as: UTF8.self)
     }
 
     private func hasStatus(_ json: String, _ expected: String) -> Bool {
@@ -203,6 +292,7 @@ struct LocalizationRuntime {
         case alreadyRunning(Int)
         case missingWebSocket
         case restartFailed(Int)
+        case rendererTargetUnavailable(String)
 
         var errorDescription: String? {
             switch self {
@@ -210,7 +300,32 @@ struct LocalizationRuntime {
             case .alreadyRunning(let count): return "Codex 仍在运行（检测到 \(count) 个候选进程）。"
             case .missingWebSocket: return "DevTools 目标缺少 WebSocket 地址。"
             case .restartFailed(let count): return "中文设置已写入，但完整重启失败（仍有 \(count) 个候选进程）。"
+            case .rendererTargetUnavailable(let suffix): return "未找到可用于汉化的界面调试目标\(suffix)"
             }
         }
+    }
+}
+
+private struct RendererSelection {
+    let target: DevToolsTarget
+    let probe: RendererProbe
+}
+
+private struct RendererProbe {
+    let hasBridge: Bool
+    let textLength: Int
+    let readyState: String
+    let documentLanguage: String
+
+    var score: Int { (hasBridge ? 10_000 : 0) + textLength }
+
+    init?(json: String) {
+        guard let data = json.data(using: .utf8),
+              let values = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+              values["codexZhProbe"] as? Bool == true else { return nil }
+        hasBridge = values["hasBridge"] as? Bool ?? false
+        textLength = (values["textLength"] as? NSNumber)?.intValue ?? 0
+        readyState = values["readyState"] as? String ?? ""
+        documentLanguage = values["documentLanguage"] as? String ?? ""
     }
 }

@@ -93,7 +93,14 @@ protocol AppLaunching {
 
 protocol DevToolsServing {
     func waitForTarget(port: UInt16, preferredType: String, timeout: TimeInterval) async throws -> DevToolsTarget
+    func listTargets(port: UInt16) async throws -> [DevToolsTarget]
     func evaluate(webSocketURL: String, expression: String, awaitPromise: Bool) async throws -> String?
+}
+
+extension DevToolsServing {
+    func listTargets(port: UInt16) async throws -> [DevToolsTarget] {
+        [try await waitForTarget(port: port, preferredType: "page", timeout: 2)]
+    }
 }
 
 struct SystemClock: ClockProviding {

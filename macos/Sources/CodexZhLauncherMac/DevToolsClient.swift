@@ -31,6 +31,10 @@ final class DevToolsClient: DevToolsServing {
         throw ClientError.targetTimeout(port, suffix)
     }
 
+    func listTargets(port: UInt16) async throws -> [DevToolsTarget] {
+        try await readTargets(port: port)
+    }
+
     func evaluate(webSocketURL: String, expression: String, awaitPromise: Bool) async throws -> String? {
         guard let url = URL(string: webSocketURL) else { throw ClientError.invalidWebSocketURL }
         let openDelegate = WebSocketOpenDelegate()

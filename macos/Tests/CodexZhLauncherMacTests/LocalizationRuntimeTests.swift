@@ -27,6 +27,13 @@ final class LocalizationRuntimeTests: XCTestCase {
         let expressions = await devTools.expressions
         XCTAssertTrue(expressions.contains { $0.contains("隐藏其他应用") })
         XCTAssertTrue(expressions.contains { $0.contains("localeOverride") })
+        let evaluatedURLs = await devTools.evaluatedURLs
+        XCTAssertTrue(evaluatedURLs.contains { $0.contains("/empty") })
+        XCTAssertTrue(evaluatedURLs.contains { $0.contains("/content") })
+        let localeApplicationURL = await devTools.localeApplicationURL
+        let verificationURL = await devTools.verificationURL
+        XCTAssertTrue(localeApplicationURL?.contains("/empty") == true)
+        XCTAssertTrue(verificationURL?.contains("/content") == true)
     }
 
     func testEnglishLaunchSkipsMenuInjection() async throws {
@@ -127,6 +134,28 @@ private final class RestartingProcessService: CodexProcessServing {
 
 private actor FakeDevTools: DevToolsServing {
     var expressions: [String] = []
+    var evaluatedURLs: [String] = []
+    var localeApplicationURL: String?
+    var verificationURL: String?
+
+    func listTargets(port: UInt16) async throws -> [DevToolsTarget] {
+        [
+            DevToolsTarget(
+                id: "empty",
+                type: "page",
+                title: "shell",
+                url: "app://shell",
+                webSocketDebuggerUrl: "ws://127.0.0.1:\(port)/devtools/empty"
+            ),
+            DevToolsTarget(
+                id: "content",
+                type: "iframe",
+                title: "Codex",
+                url: "https://chatgpt.com/codex",
+                webSocketDebuggerUrl: "ws://127.0.0.1:\(port)/devtools/content"
+            )
+        ]
+    }
 
     func waitForTarget(port: UInt16, preferredType: String, timeout: TimeInterval) async throws -> DevToolsTarget {
         DevToolsTarget(
@@ -140,6 +169,15 @@ private actor FakeDevTools: DevToolsServing {
 
     func evaluate(webSocketURL: String, expression: String, awaitPromise: Bool) async throws -> String? {
         expressions.append(expression)
+        evaluatedURLs.append(webSocketURL)
+        if expression.contains("codexZhProbe") {
+            if webSocketURL.contains("/empty") {
+                return "{\"codexZhProbe\":true,\"hasBridge\":true,\"textLength\":0,\"readyState\":\"complete\",\"documentLanguage\":\"en\"}"
+            }
+            return "{\"codexZhProbe\":true,\"hasBridge\":false,\"textLength\":240,\"readyState\":\"complete\",\"documentLanguage\":\"zh-CN\"}"
+        }
+        if expression.contains("localeOverride") { localeApplicationURL = webSocketURL }
+        if expression.contains("zhMarkers") { verificationURL = webSocketURL }
         return "{\"status\":\"ok\"}"
     }
 }
