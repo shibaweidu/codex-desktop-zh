@@ -12,6 +12,8 @@ final class UpdateCheckerTests: XCTestCase {
         XCTAssertTrue(result.updateAvailable)
         XCTAssertEqual(result.latestVersion, "0.6.1")
         XCTAssertEqual(result.releaseURL.host, "github.com")
+        XCTAssertEqual(result.assetName, GitHubUpdateChecker.expectedAssetName)
+        XCTAssertNotNil(result.checksumURL)
     }
 
     func testCurrentReleaseIsNotAvailable() throws {
@@ -37,7 +39,7 @@ final class UpdateCheckerTests: XCTestCase {
     ) -> Data {
         let releaseURL = url ?? "https://github.com/shibaweidu/codex-desktop-zh/releases/tag/\(tag)"
         return Data("""
-        {"tag_name":"\(tag)","html_url":"\(releaseURL)","draft":false,"prerelease":false}
+        {"tag_name":"\(tag)","html_url":"\(releaseURL)","draft":false,"prerelease":false,"assets":[{"name":"Codex-Zh-Launcher-macOS-arm64.zip","browser_download_url":"https://github.com/shibaweidu/codex-desktop-zh/releases/download/\(tag)/Codex-Zh-Launcher-macOS-arm64.zip","size":1000},{"name":"Codex-Zh-Launcher-macOS-x64.zip","browser_download_url":"https://github.com/shibaweidu/codex-desktop-zh/releases/download/\(tag)/Codex-Zh-Launcher-macOS-x64.zip","size":1000},{"name":"SHA256SUMS.txt","browser_download_url":"https://github.com/shibaweidu/codex-desktop-zh/releases/download/\(tag)/SHA256SUMS.txt","size":298}]}
         """.utf8)
     }
 }

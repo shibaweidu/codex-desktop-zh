@@ -11,7 +11,7 @@ struct LogEntry: Identifiable {
 
 @MainActor
 final class LauncherModel: ObservableObject {
-    static let version = "0.6.1"
+    static let version = "0.7.0"
     static let sponsorURL = URL(string: "https://www.appkaola.com")!
 
     @Published private(set) var install: CodexInstall?
@@ -24,9 +24,12 @@ final class LauncherModel: ObservableObject {
     @Published var showsRestartConfirmation = false
     @Published var showsAbout = false
     @Published var showsUpdateAlert = false
+    @Published var showsUpdateFailureAlert = false
     @Published private(set) var checkingForUpdates = false
+    @Published private(set) var updating = false
     @Published private(set) var updateStatus = "尚未检查更新"
     @Published private(set) var availableUpdate: UpdateCheckResult?
+    @Published private(set) var updateFailureMessage = ""
 
     private let discovery: CodexDiscovery
     private let processService: DarwinProcessService
@@ -157,7 +160,7 @@ final class LauncherModel: ObservableObject {
     }
 
     func checkForUpdates(showPrompt: Bool = false) {
-        guard !checkingForUpdates else { return }
+        guard !checkingForUpdates, !updating else { return }
         checkingForUpdates = true
         updateStatus = "正在连接 GitHub Releases..."
         Task {
@@ -178,6 +181,26 @@ final class LauncherModel: ObservableObject {
 
     func openAvailableUpdate() {
         NSWorkspace.shared.open(availableUpdate?.releaseURL ?? GitHubUpdateChecker.latestReleaseURL)
+    }
+
+    func installAvailableUpdate() {
+        guard let update = availableUpdate, !updating else { return }
+        updating = true
+        updateStatus = "正在下载并校验 v\(update.latestVersion)..."
+        Task {
+            do {
+                try await MacUpdateInstaller.prepareAndLaunch(update: update)
+                updateStatus = "校验完成，正在覆盖并重启..."
+                logger.write("update.apply.start version=\(update.latestVersion)")
+                NSApplication.shared.terminate(nil)
+            } catch {
+                updating = false
+                updateFailureMessage = error.localizedDescription
+                updateStatus = "自动更新失败：\(error.localizedDescription)"
+                showsUpdateFailureAlert = true
+                logger.write("update.prepare.failed \(error)")
+            }
+        }
     }
 
     func openRepository() {

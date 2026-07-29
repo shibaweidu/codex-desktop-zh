@@ -112,12 +112,12 @@ namespace CodexZhLauncher
             Grid.SetRow(updateGrid, 2);
             root.Children.Add(updateGrid);
 
-            downloadButton = BuildButton("下载新版本", true);
+            downloadButton = BuildButton("立即更新", true);
             downloadButton.Visibility = Visibility.Collapsed;
             downloadButton.HorizontalAlignment = HorizontalAlignment.Left;
-            downloadButton.Click += delegate
+            downloadButton.Click += async delegate
             {
-                if (latestResult != null) AppInfo.OpenUrl(latestResult.ReleaseUrl);
+                if (latestResult != null) await InstallUpdateAsync();
             };
             Grid.SetRow(downloadButton, 3);
             root.Children.Add(downloadButton);
@@ -183,6 +183,47 @@ namespace CodexZhLauncher
             {
                 checkButton.Content = "重新检查";
                 checkButton.IsEnabled = true;
+            }
+        }
+
+        private async System.Threading.Tasks.Task InstallUpdateAsync()
+        {
+            var choice = MessageBox.Show(
+                this,
+                "将下载 v" + latestResult.LatestVersion + "，退出当前工具后覆盖并自动重启。\n\n是否继续？",
+                "安装更新",
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Information);
+            if (choice != MessageBoxResult.Yes) return;
+
+            checkButton.IsEnabled = false;
+            downloadButton.IsEnabled = false;
+            try
+            {
+                var started = await UpdateInstaller.PrepareAndLaunchAsync(latestResult, message =>
+                {
+                    updateStatus.Text = message;
+                    updateStatus.Foreground = Accent;
+                });
+                if (started) Application.Current.Shutdown();
+            }
+            catch (Exception ex)
+            {
+                updateStatus.Text = "自动更新失败：" + ex.Message;
+                updateStatus.Foreground = TextSecondary;
+                AppLog.Write("update.prepare.failed " + ex);
+                var fallback = MessageBox.Show(
+                    this,
+                    "自动更新失败：" + ex.Message + "\n\n是否打开下载页面手动更新？",
+                    "更新未完成",
+                    MessageBoxButton.YesNo,
+                    MessageBoxImage.Warning);
+                if (fallback == MessageBoxResult.Yes) AppInfo.OpenUrl(latestResult.ReleaseUrl);
+            }
+            finally
+            {
+                checkButton.IsEnabled = true;
+                downloadButton.IsEnabled = true;
             }
         }
 

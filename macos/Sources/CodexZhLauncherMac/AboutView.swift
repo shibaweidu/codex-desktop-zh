@@ -4,6 +4,7 @@ import SwiftUI
 struct AboutView: View {
     @ObservedObject var model: LauncherModel
     @Environment(\.dismiss) private var dismiss
+    @State private var showsInstallConfirmation = false
     private let accent = Color(red: 0.77, green: 0.71, blue: 0.99)
 
     var body: some View {
@@ -44,17 +45,17 @@ struct AboutView: View {
                         .foregroundStyle(model.availableUpdate == nil ? Color.secondary : accent)
                 }
                 Spacer()
-                if model.checkingForUpdates {
+                if model.checkingForUpdates || model.updating {
                     ProgressView().controlSize(.small)
                 }
                 Button(model.availableUpdate == nil ? "检查更新" : "重新检查") {
                     model.checkForUpdates()
                 }
-                .disabled(model.checkingForUpdates)
+                .disabled(model.checkingForUpdates || model.updating)
             }
 
             if model.availableUpdate != nil {
-                Button("下载新版本") { model.openAvailableUpdate() }
+                Button("立即更新") { showsInstallConfirmation = true }
                     .buttonStyle(.borderedProminent)
                     .tint(accent)
                     .foregroundStyle(Color(red: 0.08, green: 0.07, blue: 0.11))
@@ -78,5 +79,11 @@ struct AboutView: View {
         .frame(width: 500, height: 360)
         .background(Color(red: 0.075, green: 0.08, blue: 0.095))
         .preferredColorScheme(.dark)
+        .alert("安装更新？", isPresented: $showsInstallConfirmation) {
+            Button("取消", role: .cancel) {}
+            Button("退出并更新") { model.installAvailableUpdate() }
+        } message: {
+            Text("工具将下载新版本，退出当前进程后覆盖 App Bundle 并自动重启。")
+        }
     }
 }

@@ -8,8 +8,8 @@ using System.Windows;
 [assembly: System.Reflection.AssemblyCompany("Codex Localization Enhancer Community")]
 [assembly: System.Reflection.AssemblyProduct("Codex 汉化增强工具")]
 [assembly: System.Reflection.AssemblyCopyright("Copyright 2026")]
-[assembly: System.Reflection.AssemblyVersion("0.6.1.0")]
-[assembly: System.Reflection.AssemblyFileVersion("0.6.1.0")]
+[assembly: System.Reflection.AssemblyVersion("0.7.0.0")]
+[assembly: System.Reflection.AssemblyFileVersion("0.7.0.0")]
 
 namespace CodexZhLauncher
 {
@@ -23,6 +23,12 @@ namespace CodexZhLauncher
         [STAThread]
         private static void Main(string[] args)
         {
+            if (args.Length > 0 && String.Equals(args[0], "--apply-update-windows", StringComparison.Ordinal))
+            {
+                Environment.ExitCode = UpdateInstaller.ApplyWindowsUpdate(args);
+                return;
+            }
+
             if (args.Length > 0)
             {
                 AttachConsole(AttachParentProcess);
@@ -54,6 +60,7 @@ namespace CodexZhLauncher
             {
                 Output(LocalizationScripts.SelfTest());
                 Output(UpdateChecker.SelfTest());
+                Output(UpdateInstaller.SelfTest());
                 return;
             }
 

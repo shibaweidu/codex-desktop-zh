@@ -3,6 +3,7 @@ using System.Net;
 using System.Net.Http;
 using System.Threading.Tasks;
 using System.Web.Script.Serialization;
+using System.Linq;
 
 namespace CodexZhLauncher
 {
@@ -11,6 +12,10 @@ namespace CodexZhLauncher
         public bool UpdateAvailable { get; set; }
         public string LatestVersion { get; set; }
         public string ReleaseUrl { get; set; }
+        public string AssetName { get; set; }
+        public string AssetUrl { get; set; }
+        public long AssetSize { get; set; }
+        public string ChecksumUrl { get; set; }
         public string Message { get; set; }
     }
 
@@ -25,6 +30,14 @@ namespace CodexZhLauncher
             public string html_url { get; set; }
             public bool draft { get; set; }
             public bool prerelease { get; set; }
+            public GitHubAsset[] assets { get; set; }
+        }
+
+        private sealed class GitHubAsset
+        {
+            public string name { get; set; }
+            public string browser_download_url { get; set; }
+            public long size { get; set; }
         }
 
         public static async Task<UpdateCheckResult> CheckAsync(string currentVersion)
@@ -51,11 +64,27 @@ namespace CodexZhLauncher
             var current = ParseVersion(currentVersion);
             var releaseUri = ValidateReleaseUrl(release.html_url);
             var available = latest > current;
+            GitHubAsset executable = null;
+            GitHubAsset checksums = null;
+            if (available)
+            {
+                var assets = release.assets ?? new GitHubAsset[0];
+                executable = assets.FirstOrDefault(item =>
+                    String.Equals(item.name, "Codex-Zh-Launcher-Windows-x64.exe", StringComparison.Ordinal));
+                checksums = assets.FirstOrDefault(item =>
+                    String.Equals(item.name, "SHA256SUMS.txt", StringComparison.Ordinal));
+                if (executable == null || checksums == null || executable.size <= 0)
+                    throw new InvalidOperationException("GitHub Release 缺少 Windows 更新文件或校验文件。");
+            }
             return new UpdateCheckResult
             {
                 UpdateAvailable = available,
                 LatestVersion = latest.ToString(3),
                 ReleaseUrl = releaseUri.AbsoluteUri,
+                AssetName = executable == null ? null : executable.name,
+                AssetUrl = executable == null ? null : ValidateAssetUrl(executable.browser_download_url, executable.name).AbsoluteUri,
+                AssetSize = executable == null ? 0 : executable.size,
+                ChecksumUrl = checksums == null ? null : ValidateAssetUrl(checksums.browser_download_url, checksums.name).AbsoluteUri,
                 Message = available
                     ? "发现新版本 v" + latest.ToString(3)
                     : "当前已是最新版本 v" + current.ToString(3)
@@ -65,13 +94,15 @@ namespace CodexZhLauncher
         internal static string SelfTest()
         {
             const string newer =
-                "{\"tag_name\":\"v0.6.1\",\"html_url\":\"https://github.com/shibaweidu/codex-desktop-zh/releases/tag/v0.6.1\",\"draft\":false,\"prerelease\":false}";
+                "{\"tag_name\":\"v0.6.1\",\"html_url\":\"https://github.com/shibaweidu/codex-desktop-zh/releases/tag/v0.6.1\",\"draft\":false,\"prerelease\":false,\"assets\":[{\"name\":\"Codex-Zh-Launcher-Windows-x64.exe\",\"browser_download_url\":\"https://github.com/shibaweidu/codex-desktop-zh/releases/download/v0.6.1/Codex-Zh-Launcher-Windows-x64.exe\",\"size\":1000},{\"name\":\"SHA256SUMS.txt\",\"browser_download_url\":\"https://github.com/shibaweidu/codex-desktop-zh/releases/download/v0.6.1/SHA256SUMS.txt\",\"size\":298}]}";
             const string current =
                 "{\"tag_name\":\"v0.6.0\",\"html_url\":\"https://github.com/shibaweidu/codex-desktop-zh/releases/tag/v0.6.0\",\"draft\":false,\"prerelease\":false}";
             var newerResult = Parse(newer, "0.6.0");
             var currentResult = Parse(current, "0.6.0");
             if (!newerResult.UpdateAvailable || currentResult.UpdateAvailable)
                 throw new InvalidOperationException("更新版本比较自检失败。");
+            if (String.IsNullOrWhiteSpace(newerResult.AssetUrl) || String.IsNullOrWhiteSpace(newerResult.ChecksumUrl))
+                throw new InvalidOperationException("更新文件解析自检失败。");
             try
             {
                 Parse(
@@ -108,6 +139,22 @@ namespace CodexZhLauncher
                     StringComparison.OrdinalIgnoreCase))
             {
                 throw new InvalidOperationException("更新地址不是本项目的 GitHub Release。");
+            }
+            return uri;
+        }
+
+        private static Uri ValidateAssetUrl(string value, string assetName)
+        {
+            Uri uri;
+            if (!Uri.TryCreate(value, UriKind.Absolute, out uri) ||
+                uri.Scheme != Uri.UriSchemeHttps ||
+                !String.Equals(uri.Host, "github.com", StringComparison.OrdinalIgnoreCase) ||
+                !uri.AbsolutePath.StartsWith(
+                    "/shibaweidu/codex-desktop-zh/releases/download/",
+                    StringComparison.OrdinalIgnoreCase) ||
+                !uri.AbsolutePath.EndsWith("/" + assetName, StringComparison.Ordinal))
+            {
+                throw new InvalidOperationException("更新文件地址不是本项目的 GitHub Release。");
             }
             return uri;
         }

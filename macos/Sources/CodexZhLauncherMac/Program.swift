@@ -8,6 +8,9 @@ enum Program {
     @MainActor
     static func main() {
         let arguments = Array(CommandLine.arguments.dropFirst())
+        if arguments.first == "--apply-update-macos" {
+            Darwin.exit(MacUpdateInstaller.apply(arguments: arguments))
+        }
         if let command = arguments.first {
             Task {
                 let exitCode = await runCLI(command: command)
@@ -37,7 +40,7 @@ enum Program {
             let processService = DarwinProcessService()
             let install = discovery.detect()
             if command == "--diagnostics" {
-                print("Codex Localization Enhancer 0.6.1")
+                print("Codex Localization Enhancer 0.7.0")
                 print("os=\(ProcessInfo.processInfo.operatingSystemVersionString)")
                 #if arch(arm64)
                 print("architecture=arm64")

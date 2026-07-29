@@ -22,9 +22,15 @@ struct LauncherView: View {
         }
         .alert("发现新版本", isPresented: $model.showsUpdateAlert) {
             Button("稍后", role: .cancel) {}
+            Button("立即更新") { model.installAvailableUpdate() }
+        } message: {
+            Text((model.availableUpdate?.message ?? "GitHub Releases 中有可用的新版本。") + "。工具将退出、覆盖并自动重启。")
+        }
+        .alert("自动更新失败", isPresented: $model.showsUpdateFailureAlert) {
+            Button("取消", role: .cancel) {}
             Button("打开下载页") { model.openAvailableUpdate() }
         } message: {
-            Text(model.availableUpdate?.message ?? "GitHub Releases 中有可用的新版本。")
+            Text(model.updateFailureMessage)
         }
         .sheet(isPresented: $model.showsAbout) {
             AboutView(model: model)

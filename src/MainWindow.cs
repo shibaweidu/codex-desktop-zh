@@ -733,15 +733,47 @@ namespace CodexZhLauncher
                 AppendLog(result.Message + "，可从 GitHub Releases 下载。", Restart);
                 var choice = MessageBox.Show(
                     this,
-                    result.Message + "。\n\n是否打开下载页面？",
+                    result.Message + "。\n\n是否立即下载、覆盖并重启工具？",
                     "发现新版本",
                     MessageBoxButton.YesNo,
                     MessageBoxImage.Information);
-                if (choice == MessageBoxResult.Yes) AppInfo.OpenUrl(result.ReleaseUrl);
+                if (choice == MessageBoxResult.Yes) await InstallUpdateAsync(result);
             }
             catch (Exception ex)
             {
                 AppLog.Write("update.check.failed " + ex.Message);
+            }
+        }
+
+        private async Task InstallUpdateAsync(UpdateCheckResult update)
+        {
+            try
+            {
+                SetBusy(true, "正在更新工具", "正在下载并校验 v" + update.LatestVersion);
+                AppendLog("开始下载工具更新 v" + update.LatestVersion + "。", Restart);
+                var started = await UpdateInstaller.PrepareAndLaunchAsync(update, message =>
+                {
+                    SetStatus("正在更新工具", message, Restart);
+                    AppendLog(message, TextSecondary);
+                });
+                if (started)
+                {
+                    AppLog.Write("update.apply.start version=" + update.LatestVersion);
+                    Application.Current.Shutdown();
+                }
+            }
+            catch (Exception ex)
+            {
+                SetBusy(false, "自动更新失败", ex.Message);
+                AppendLog("自动更新失败：" + ex.Message, Danger);
+                AppLog.Write("update.prepare.failed " + ex);
+                var choice = MessageBox.Show(
+                    this,
+                    "自动更新失败：" + ex.Message + "\n\n是否打开下载页面手动更新？",
+                    "更新未完成",
+                    MessageBoxButton.YesNo,
+                    MessageBoxImage.Warning);
+                if (choice == MessageBoxResult.Yes) AppInfo.OpenUrl(update.ReleaseUrl);
             }
         }
 

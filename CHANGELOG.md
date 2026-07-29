@@ -2,6 +2,20 @@
 
 本项目遵循 [Semantic Versioning](https://semver.org/)。
 
+## [0.7.0] - 2026-07-29
+
+### Added
+
+- Windows 一键下载、SHA-256 校验、备份覆盖、自动重启和失败回滚
+- macOS 按架构下载 ZIP，校验 Bundle ID、版本、架构与 ad-hoc 签名后覆盖重启
+- 独立临时更新进程，当前工具退出后再替换 EXE 或 App Bundle
+- 安装目录不可写、App Translocation 或校验失败时提供手动下载回退
+
+### Security
+
+- 更新文件名、GitHub 仓库路径、Release 地址和下载大小均执行固定约束
+- 更新流程只替换当前汉化增强工具，不关闭或修改 Codex
+
 ## [0.6.1] - 2026-07-29
 
 ### Added

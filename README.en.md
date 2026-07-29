@@ -4,7 +4,7 @@ English | [简体中文](README.md)
 
 ![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS-5B8DEF)
 ![Architecture](https://img.shields.io/badge/architecture-x64%20%7C%20arm64-6D7280)
-![Version](https://img.shields.io/badge/version-v0.6.1-C4B5FD)
+![Version](https://img.shields.io/badge/version-v0.7.0-C4B5FD)
 ![License](https://img.shields.io/badge/license-MIT-31B77A)
 
 **Codex Desktop Chinese Localization Enhancer** is a Windows and macOS launcher for enabling the Chinese UI and translating native Electron menus in Codex Desktop. It supports Microsoft Store, portable, and macOS App Bundle installations, verified process shutdown, and automatic restart in Chinese mode.
@@ -75,9 +75,9 @@ Codex updates may change Electron arguments, settings contracts, or menu labels.
 
 ## Updates
 
-The launcher checks this repository's latest GitHub Release at startup and prompts before opening the download page. A manual check is also available in About. It never silently downloads or replaces the EXE or App Bundle.
+The launcher checks this repository's latest GitHub Release at startup. After confirmation, it downloads the platform asset and `SHA256SUMS.txt`, verifies them, backs up and replaces the current EXE or App Bundle, and restarts. Failed replacements restore the previous version and offer the manual download page.
 
-Update checks and download prompts work on macOS without an Apple Developer ID. Signing and notarization are still required for a dependable self-replacing updater, so the current ad-hoc signed macOS build does not overwrite its own `.app`.
+The macOS updater verifies the archive hash, Bundle ID, version, architecture, and ad-hoc signature before replacement. It works without an Apple Developer ID, but it cannot provide an Apple-recognized publisher identity and future Gatekeeper policy may still block the restarted app.
 
 ## Build and Test
 
