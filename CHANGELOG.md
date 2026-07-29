@@ -2,6 +2,15 @@
 
 本项目遵循 [Semantic Versioning](https://semver.org/)。
 
+## [0.7.3] - 2026-07-29
+
+### Fixed
+
+- macOS 写入 `localeOverride` 后完整关闭并重新启动 Codex，使语言资源在主进程启动阶段重新加载
+- 仅在最终页面语言或中文界面标记通过校验后报告汉化成功，避免设置写入成功造成误报
+- macOS 原生菜单注入兼容新版 Node/Electron，增加 `getBuiltinModule` 与 `createRequire` 加载路径
+- 页面校验等待实际内容加载，并记录文本长度、页面语言及中英文标记统计
+
 ## [0.7.2] - 2026-07-29
 
 ### Fixed

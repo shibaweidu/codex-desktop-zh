@@ -12,6 +12,8 @@ final class SharedResourcesTests: XCTestCase {
         XCTAssertFalse(locale.contains("__LOCALE_JSON__"))
         XCTAssertTrue(menu.contains("隐藏其他应用"))
         XCTAssertTrue(menu.contains("前置全部窗口"))
+        XCTAssertTrue(menu.contains("createRequire"))
+        XCTAssertTrue(menu.contains("getBuiltinModule"))
         XCTAssertFalse(menu.contains("__TRANSLATIONS_JSON__"))
         XCTAssertNoThrow(try resources.selfTest())
     }

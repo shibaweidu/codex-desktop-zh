@@ -4,10 +4,11 @@ import XCTest
 
 final class LocalizationRuntimeTests: XCTestCase {
     func testChineseLaunchAppliesLocaleAndMacMenu() async throws {
-        let launcher = FakeLauncher()
+        let processService = RestartingProcessService()
+        let launcher = FakeLauncher(processService: processService)
         let devTools = FakeDevTools()
         let runtime = LocalizationRuntime(
-            processService: EmptyProcessService(),
+            processService: processService,
             launcher: launcher,
             devTools: devTools,
             resources: try SharedResources(rootURL: sharedDirectory()),
@@ -17,10 +18,12 @@ final class LocalizationRuntimeTests: XCTestCase {
         let report = try await runtime.launch(install: install(), locale: "zh-CN")
 
         XCTAssertTrue(report.complete)
-        XCTAssertEqual(report.processID, 900)
-        XCTAssertTrue(launcher.arguments.contains("--remote-debugging-address=127.0.0.1"))
-        XCTAssertTrue(launcher.arguments.contains("--remote-allow-origins=http://127.0.0.1:9222"))
-        XCTAssertTrue(launcher.arguments.contains("--lang=zh-CN"))
+        XCTAssertEqual(report.processID, 901)
+        XCTAssertEqual(launcher.launches.count, 2)
+        XCTAssertEqual(processService.gracefulExitCount, 1)
+        XCTAssertTrue(launcher.launches[1].contains("--remote-debugging-address=127.0.0.1"))
+        XCTAssertTrue(launcher.launches[1].contains("--remote-allow-origins=http://127.0.0.1:9224"))
+        XCTAssertTrue(launcher.launches[1].contains("--lang=zh-CN"))
         let expressions = await devTools.expressions
         XCTAssertTrue(expressions.contains { $0.contains("隐藏其他应用") })
         XCTAssertTrue(expressions.contains { $0.contains("localeOverride") })
@@ -40,6 +43,7 @@ final class LocalizationRuntimeTests: XCTestCase {
         let report = try await runtime.launch(install: install(), locale: "en-US")
 
         XCTAssertTrue(report.complete)
+        XCTAssertEqual(launcher.launches.count, 1)
         let expressions = await devTools.expressions
         XCTAssertFalse(expressions.contains { $0.contains("Menu.setApplicationMenu") })
     }
@@ -74,7 +78,12 @@ final class DevToolsClientTests: XCTestCase {
 
 private final class FakeLauncher: AppLaunching {
     var nextPort: UInt16 = 9222
-    var arguments: [String] = []
+    var launches: [[String]] = []
+    private let processService: RestartingProcessService?
+
+    init(processService: RestartingProcessService? = nil) {
+        self.processService = processService
+    }
 
     func reserveLoopbackPort() throws -> UInt16 {
         defer { nextPort += 1 }
@@ -82,8 +91,37 @@ private final class FakeLauncher: AppLaunching {
     }
 
     func launch(install: CodexInstall, arguments: [String]) async throws -> Int32 {
-        self.arguments = arguments
-        return 900
+        launches.append(arguments)
+        processService?.markRunning()
+        return Int32(899 + launches.count)
+    }
+}
+
+private final class RestartingProcessService: CodexProcessServing {
+    private(set) var gracefulExitCount = 0
+    private var running = false
+
+    func markRunning() { running = true }
+
+    func scan(install: CodexInstall) -> ProcessScan {
+        guard running else { return ProcessScan() }
+        return ProcessScan(verified: [ProcessSnapshot(
+            pid: 900,
+            name: "Codex",
+            executablePath: install.executableURL.path,
+            startMarker: "1:1",
+            isMainExecutable: true
+        )])
+    }
+
+    func requestGracefulExit(snapshot: ProcessSnapshot, install: CodexInstall) -> Bool {
+        gracefulExitCount += 1
+        running = false
+        return true
+    }
+
+    func forceTerminate(snapshot: ProcessSnapshot, install: CodexInstall) throws {
+        running = false
     }
 }
 

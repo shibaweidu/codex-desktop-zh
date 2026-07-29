@@ -1,10 +1,42 @@
 (function () {
   var translations = __TRANSLATIONS_JSON__;
   var platform = __PLATFORM_JSON__;
-  var load = process && process.mainModule && process.mainModule.require;
-  var electron = load ? load.call(process.mainModule, 'electron') : null;
+  var attempts = [];
+  var electron = null;
+  var tryLoad = function (name, callback) {
+    try {
+      var value = callback();
+      attempts.push(name + ':ok');
+      return value || null;
+    } catch (error) {
+      attempts.push(name + ':' + String(error && error.message ? error.message : error));
+      return null;
+    }
+  };
+  if (typeof require === 'function') {
+    electron = tryLoad('require', function () { return require('electron'); });
+  }
+  if (!electron && typeof process !== 'undefined' && process.mainModule && process.mainModule.require) {
+    electron = tryLoad('mainModule', function () { return process.mainModule.require('electron'); });
+  }
+  if (!electron && typeof process !== 'undefined' && typeof process.getBuiltinModule === 'function') {
+    electron = tryLoad('getBuiltinModule', function () { return process.getBuiltinModule('electron'); });
+  }
+  if (!electron && typeof process !== 'undefined' && typeof process.getBuiltinModule === 'function') {
+    electron = tryLoad('createRequire', function () {
+      var Module = process.getBuiltinModule('module');
+      var load = Module.createRequire(process.cwd() + '/codex-zh-launcher.cjs');
+      return load('electron');
+    });
+  }
   if (!electron || !electron.Menu) {
-    return JSON.stringify({ status: 'skipped', reason: 'electron-menu-unavailable' });
+    return JSON.stringify({
+      status: 'skipped',
+      reason: 'electron-menu-unavailable',
+      attempts: attempts,
+      node: typeof process !== 'undefined' && process.versions ? process.versions.node || '' : '',
+      electron: typeof process !== 'undefined' && process.versions ? process.versions.electron || '' : ''
+    });
   }
   var Menu = electron.Menu;
   var changed = 0;
