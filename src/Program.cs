@@ -50,6 +50,7 @@ namespace CodexZhLauncher
                 System.Windows.Interop.RenderMode.SoftwareOnly;
             var app = new Application();
             app.ShutdownMode = ShutdownMode.OnMainWindowClose;
+            UpdateInstaller.ScheduleCleanup();
             app.Run(new MainWindow());
         }
 

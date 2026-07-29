@@ -123,6 +123,12 @@ enum MacUpdateInstaller {
             }
         } catch {
             AppLogger.shared.write("update.apply.failed \(error)")
+            if restart, arguments.count > 2 {
+                let target = URL(fileURLWithPath: arguments[2], isDirectory: true)
+                if FileManager.default.fileExists(atPath: target.path) {
+                    try? run("/usr/bin/open", arguments: ["-n", target.path])
+                }
+            }
             return 1
         }
     }

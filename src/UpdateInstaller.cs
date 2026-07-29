@@ -98,7 +98,7 @@ namespace CodexZhLauncher
                     CopyWithRetry(sourcePath, targetPath);
                     if (!String.Equals(ComputeSha256(File.ReadAllBytes(targetPath)), expectedHash, StringComparison.OrdinalIgnoreCase))
                         throw new InvalidOperationException("覆盖后的更新文件校验失败。");
-                    Process.Start(new ProcessStartInfo { FileName = targetPath, UseShellExecute = true });
+                    StartUpdatedApplication(targetPath, updateRoot);
                     TryDelete(backupPath);
                     return 0;
                 }
@@ -111,8 +111,37 @@ namespace CodexZhLauncher
             catch (Exception ex)
             {
                 AppLog.Write("update.apply.failed " + ex);
+                try
+                {
+                    if (args.Length > 4 && File.Exists(args[3]))
+                        StartUpdatedApplication(args[3], args[4]);
+                }
+                catch { }
                 return 1;
             }
+        }
+
+        public static void ScheduleCleanup()
+        {
+            Task.Run(delegate
+            {
+                Thread.Sleep(5000);
+                try
+                {
+                    var updatesRoot = Path.GetFullPath(Path.Combine(
+                        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                        "CodexZhLauncher",
+                        "updates"));
+                    var requested = Environment.GetEnvironmentVariable("CODEX_ZH_CLEANUP_DIR");
+                    if (String.IsNullOrWhiteSpace(requested)) return;
+                    var fullPath = Path.GetFullPath(requested);
+                    if (!fullPath.StartsWith(updatesRoot + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase) ||
+                        !Directory.Exists(fullPath)) return;
+                    try { Directory.Delete(fullPath, true); }
+                    catch { }
+                }
+                catch { }
+            });
         }
 
         internal static string ParseExpectedHash(string contents, string assetName)
@@ -201,6 +230,18 @@ namespace CodexZhLauncher
                 catch (Exception ex) { last = ex; Thread.Sleep(250); }
             }
             throw new IOException("无法覆盖更新文件。", last);
+        }
+
+        private static void StartUpdatedApplication(string targetPath, string updateRoot)
+        {
+            var startInfo = new ProcessStartInfo
+            {
+                FileName = targetPath,
+                UseShellExecute = false,
+                WorkingDirectory = Path.GetDirectoryName(targetPath)
+            };
+            startInfo.EnvironmentVariables["CODEX_ZH_CLEANUP_DIR"] = updateRoot;
+            Process.Start(startInfo);
         }
 
         private static string ComputeSha256(byte[] data)
