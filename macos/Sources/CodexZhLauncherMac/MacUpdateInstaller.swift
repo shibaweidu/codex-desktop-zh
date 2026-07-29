@@ -8,7 +8,7 @@ enum MacUpdateError: LocalizedError {
     case oversizedDownload
     case checksumMissing
     case checksumMismatch
-    case invalidBundle
+    case invalidBundle(String)
     case invalidArchitecture
     case invalidSignature
     case targetNotWritable
@@ -21,7 +21,7 @@ enum MacUpdateError: LocalizedError {
         case .oversizedDownload: return "更新文件大小无效。"
         case .checksumMissing: return "SHA256SUMS.txt 中没有目标更新文件。"
         case .checksumMismatch: return "更新文件 SHA-256 校验失败。"
-        case .invalidBundle: return "更新包中的 App Bundle 无效。"
+        case .invalidBundle(let detail): return "更新包中的 App Bundle 无效：\(detail)"
         case .invalidArchitecture: return "更新包架构与当前 Mac 不匹配。"
         case .invalidSignature: return "更新包签名验证失败。"
         case .targetNotWritable: return "当前应用目录没有覆盖更新权限。"
@@ -74,7 +74,7 @@ enum MacUpdateInstaller {
             at: extracted,
             includingPropertiesForKeys: nil
         ).first(where: { $0.pathExtension.lowercased() == "app" }) else {
-            throw MacUpdateError.invalidBundle
+            throw MacUpdateError.invalidBundle("解压后未找到 .app。")
         }
         let stagedExecutable = try validateBundle(stagedBundle, expectedVersion: update.latestVersion)
 
@@ -156,14 +156,33 @@ enum MacUpdateInstaller {
     }
 
     private static func validateBundle(_ bundleURL: URL, expectedVersion: String) throws -> URL {
+        let resolvedBundle = bundleURL.standardizedFileURL.resolvingSymlinksInPath()
         guard bundleURL.pathExtension.lowercased() == "app",
-              bundleURL == bundleURL.resolvingSymlinksInPath(),
-              let bundle = Bundle(url: bundleURL),
-              bundle.bundleIdentifier == bundleIdentifier,
-              bundle.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String == expectedVersion,
-              let executable = bundle.executableURL,
-              FileManager.default.isExecutableFile(atPath: executable.path)
-        else { throw MacUpdateError.invalidBundle }
+              bundleURL.standardizedFileURL == resolvedBundle else {
+            throw MacUpdateError.invalidBundle("应用目录路径无效。")
+        }
+        let infoURL = resolvedBundle.appendingPathComponent("Contents/Info.plist")
+        guard let info = NSDictionary(contentsOf: infoURL) as? [String: Any] else {
+            throw MacUpdateError.invalidBundle("无法读取 Info.plist。")
+        }
+        guard info["CFBundleIdentifier"] as? String == bundleIdentifier else {
+            throw MacUpdateError.invalidBundle("Bundle ID 不匹配。")
+        }
+        guard info["CFBundleShortVersionString"] as? String == expectedVersion else {
+            throw MacUpdateError.invalidBundle("版本号不匹配。")
+        }
+        guard let executableName = info["CFBundleExecutable"] as? String,
+              !executableName.isEmpty else {
+            throw MacUpdateError.invalidBundle("缺少主程序名称。")
+        }
+        let executable = resolvedBundle
+            .appendingPathComponent("Contents/MacOS", isDirectory: true)
+            .appendingPathComponent(executableName)
+            .standardizedFileURL.resolvingSymlinksInPath()
+        guard CodexDiscovery.isPath(executable.path, within: resolvedBundle.path),
+              FileManager.default.isExecutableFile(atPath: executable.path) else {
+            throw MacUpdateError.invalidBundle("主程序无效。")
+        }
 
         do { try run("/usr/bin/codesign", arguments: ["--verify", "--deep", "--strict", bundleURL.path]) }
         catch { throw MacUpdateError.invalidSignature }

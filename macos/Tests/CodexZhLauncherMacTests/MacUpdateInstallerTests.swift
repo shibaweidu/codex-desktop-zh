@@ -12,6 +12,7 @@ final class MacUpdateInstallerTests: XCTestCase {
         defer { try? FileManager.default.removeItem(at: container) }
 
         let staged = linkedDirectory.appendingPathComponent("Codex 汉化增强工具.app", isDirectory: true)
+        try FileManager.default.createDirectory(at: staged, withIntermediateDirectories: true)
         let expected = realDirectory.appendingPathComponent("Codex 汉化增强工具.app", isDirectory: true)
             .standardizedFileURL.resolvingSymlinksInPath()
 
