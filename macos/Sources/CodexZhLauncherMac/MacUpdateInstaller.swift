@@ -60,9 +60,10 @@ enum MacUpdateInstaller {
         let expectedHash = try parseExpectedHash(checksumText, assetName: assetName)
         guard sha256(archive) == expectedHash.lowercased() else { throw MacUpdateError.checksumMismatch }
 
-        let root = FileManager.default.temporaryDirectory
+        let requestedRoot = FileManager.default.temporaryDirectory
             .appendingPathComponent("CodexZhLauncher-update-\(UUID().uuidString)", isDirectory: true)
-        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        try FileManager.default.createDirectory(at: requestedRoot, withIntermediateDirectories: true)
+        let root = canonicalStagingURL(requestedRoot)
         let archiveURL = root.appendingPathComponent(assetName)
         try archive.write(to: archiveURL, options: .atomic)
         let extracted = root.appendingPathComponent("extracted", isDirectory: true)
@@ -97,8 +98,12 @@ enum MacUpdateInstaller {
         guard arguments.count == 6, let parentPID = Int32(arguments[1]) else { return 2 }
         do {
             let target = URL(fileURLWithPath: arguments[2], isDirectory: true).standardizedFileURL
-            let staged = URL(fileURLWithPath: arguments[3], isDirectory: true).standardizedFileURL
-            let root = URL(fileURLWithPath: arguments[4], isDirectory: true).standardizedFileURL
+            let staged = canonicalStagingURL(
+                URL(fileURLWithPath: arguments[3], isDirectory: true)
+            )
+            let root = canonicalStagingURL(
+                URL(fileURLWithPath: arguments[4], isDirectory: true)
+            )
             let version = arguments[5]
             try validateApplyPaths(target: target, staged: staged, root: root)
             _ = try validateBundle(staged, expectedVersion: version)
@@ -144,6 +149,10 @@ enum MacUpdateInstaller {
             }
         }
         throw MacUpdateError.checksumMissing
+    }
+
+    static func canonicalStagingURL(_ url: URL) -> URL {
+        url.standardizedFileURL.resolvingSymlinksInPath()
     }
 
     private static func validateBundle(_ bundleURL: URL, expectedVersion: String) throws -> URL {

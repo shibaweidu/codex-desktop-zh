@@ -19,7 +19,6 @@ SOURCE_APP="$ROOT/macos/.artifacts/$ARCH/Codex 汉化增强工具.app"
 test -d "$SOURCE_APP"
 UPDATE_ROOT="$(mktemp -d "${TMPDIR:-/tmp}/CodexZhLauncher-update-test.XXXXXX")"
 TARGET_PARENT="$(mktemp -d "${TMPDIR:-/tmp}/CodexZhLauncher-target-test.XXXXXX")"
-UPDATE_ROOT="$(cd "$UPDATE_ROOT" && pwd -P)"
 TARGET_PARENT="$(cd "$TARGET_PARENT" && pwd -P)"
 TARGET_APP="$TARGET_PARENT/Codex 汉化增强工具.app"
 STAGED_APP="$UPDATE_ROOT/Codex 汉化增强工具.app"
@@ -42,12 +41,12 @@ chmod 755 "$HELPER"
   "$TARGET_APP" \
   "$STAGED_APP" \
   "$UPDATE_ROOT" \
-  0.7.1
+  0.7.2
 
 test -d "$TARGET_APP"
 test -z "$(find "$TARGET_PARENT" -maxdepth 1 -name '.CodexZhLauncher-update-backup-*' -print -quit)"
 codesign --verify --deep --strict "$TARGET_APP"
 VERSION="$(plutil -extract CFBundleShortVersionString raw -o - "$TARGET_APP/Contents/Info.plist")"
-test "$VERSION" = "0.7.1"
+test "$VERSION" = "0.7.2"
 test ! -e "$UPDATE_ROOT"
 echo "macos_updater=ok arch=$ARCH"
