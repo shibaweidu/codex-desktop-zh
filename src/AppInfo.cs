@@ -4,7 +4,7 @@ namespace CodexZhLauncher
 {
     internal static class AppInfo
     {
-        public const string Version = "0.7.4";
+        public const string Version = "0.7.5";
         public const string RepositoryUrl = "https://github.com/shibaweidu/codex-desktop-zh";
         public const string FeedbackUrl = RepositoryUrl + "/issues/new/choose";
         public const string LatestReleaseUrl = RepositoryUrl + "/releases/latest";

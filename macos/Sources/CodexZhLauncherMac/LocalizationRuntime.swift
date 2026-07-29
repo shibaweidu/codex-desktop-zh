@@ -30,48 +30,39 @@ struct LocalizationRuntime {
         guard running == 0 else { throw RuntimeError.alreadyRunning(running) }
 
         var report = LaunchReport()
-        var started = try await startCodex(install: install, locale: locale, restarting: false, progress: progress)
+        let started = try await startCodex(install: install, locale: locale, restarting: false, progress: progress)
         report.rendererPort = started.rendererPort
         report.inspectorPort = started.inspectorPort
         report.processID = started.processID
         report.started = true
         emit("Codex 已启动，正在连接本地汉化接口。", progress)
 
-        var localeConfigured = false
         do {
-            report.localeDetail = try await applyLocale(port: started.rendererPort, locale: locale)
-            localeConfigured = hasStatus(report.localeDetail, "ok")
+            let selected = try await waitForRendererTarget(
+                port: started.rendererPort,
+                timeout: 25,
+                requireBridge: true,
+                requireContent: false
+            )
+            if locale.lowercased().hasPrefix("zh") {
+                emit("正在启用 Codex 官方中文资源。", progress)
+                let bootstrap = try await installI18nBootstrap(selection: selected)
+                report.localeDetail = "bootstrap=\(bootstrap)"
+            }
+            let setting = try await applyLocale(selection: selected, locale: locale)
+            report.localeDetail = join(report.localeDetail, "setting=\(setting)")
+            if hasStatus(setting, "ok") {
+                emit("语言设置已写入，正在刷新 Codex 界面。", progress)
+            }
         } catch {
-            report.localeDetail = "setting-error=\(error.localizedDescription)"
-        }
-
-        if locale.lowercased().hasPrefix("zh"), localeConfigured {
-            emit("中文设置已写入，正在完整重启 Codex 以加载语言资源。", progress)
-            await sleeper.sleep(seconds: 0.8)
-            let shutdown = await ShutdownCoordinator(
-                processService: processService,
-                sleeper: sleeper,
-                logger: logger
-            ).shutdown(install: install) { message in
-                emit(message, progress)
-            }
-            guard shutdown.success else {
-                throw RuntimeError.restartFailed(shutdown.remainingCount)
-            }
-            await sleeper.sleep(seconds: 0.75)
-            started = try await startCodex(install: install, locale: locale, restarting: true, progress: progress)
-            report.rendererPort = started.rendererPort
-            report.inspectorPort = started.inspectorPort
-            report.processID = started.processID
-            report.localeDetail = join(report.localeDetail, "restart=ok")
-            emit("Codex 已重新启动，正在验证最终界面。", progress)
+            report.localeDetail = join(report.localeDetail, "setting-error=\(error.localizedDescription)")
         }
 
         let finalRendererPort = report.rendererPort
         let finalInspectorPort = report.inspectorPort
         async let menuResult = applyMenuIfNeeded(port: finalInspectorPort, locale: locale)
         do {
-            await sleeper.sleep(seconds: 1.5)
+            await sleeper.sleep(seconds: 2.0)
             let verification = try await verifyLocale(port: finalRendererPort, locale: locale)
             report.localeApplied = hasStatus(verification, "ok")
             report.localeDetail = join(report.localeDetail, "verification=\(verification)")
@@ -128,13 +119,21 @@ struct LocalizationRuntime {
         return (processID, rendererPort, inspectorPort)
     }
 
-    private func applyLocale(port: UInt16, locale: String) async throws -> String {
-        let selected = try await waitForRendererTarget(
-            port: port,
-            timeout: 25,
-            requireBridge: true,
-            requireContent: false
-        )
+    private func installI18nBootstrap(selection: RendererSelection) async throws -> String {
+        guard let socket = selection.target.webSocketDebuggerUrl else { throw RuntimeError.missingWebSocket }
+        let script = try resources.buildI18nBootstrap()
+        let identifier = try await devTools.installNewDocumentScript(webSocketURL: socket, script: script)
+        let current = try await devTools.evaluate(
+            webSocketURL: socket,
+            expression: script,
+            awaitPromise: false
+        ) ?? ""
+        logger.write("i18n.bootstrap identifier=\(identifier ?? "unknown") current=\(current)")
+        return "{\"status\":\"ok\",\"newDocument\":true,\"identifier\":\(jsonString(identifier ?? "unknown")),\"current\":\(jsonString(current))}"
+    }
+
+    private func applyLocale(selection: RendererSelection, locale: String) async throws -> String {
+        let selected = selection
         let target = selected.target
         guard let socket = target.webSocketDebuggerUrl else { throw RuntimeError.missingWebSocket }
         return try await devTools.evaluate(
@@ -271,6 +270,13 @@ struct LocalizationRuntime {
         return String(decoding: data, as: UTF8.self)
     }
 
+    private func jsonString(_ value: String) -> String {
+        guard let data = try? JSONSerialization.data(withJSONObject: value, options: [.fragmentsAllowed]) else {
+            return "\"\""
+        }
+        return String(decoding: data, as: UTF8.self)
+    }
+
     private func hasStatus(_ json: String, _ expected: String) -> Bool {
         guard let data = json.data(using: .utf8),
               let object = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
@@ -291,7 +297,6 @@ struct LocalizationRuntime {
         case invalidInstall
         case alreadyRunning(Int)
         case missingWebSocket
-        case restartFailed(Int)
         case rendererTargetUnavailable(String)
 
         var errorDescription: String? {
@@ -299,7 +304,6 @@ struct LocalizationRuntime {
             case .invalidInstall: return "未检测到可用的 Codex Desktop。"
             case .alreadyRunning(let count): return "Codex 仍在运行（检测到 \(count) 个候选进程）。"
             case .missingWebSocket: return "DevTools 目标缺少 WebSocket 地址。"
-            case .restartFailed(let count): return "中文设置已写入，但完整重启失败（仍有 \(count) 个候选进程）。"
             case .rendererTargetUnavailable(let suffix): return "未找到可用于汉化的界面调试目标\(suffix)"
             }
         }

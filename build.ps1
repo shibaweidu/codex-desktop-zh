@@ -50,6 +50,7 @@ foreach ($reference in $references) {
 }
 
 $sharedResources = @(
+    @{ Path = (Join-Path $sharedDir 'i18n-bootstrap.js'); Name = 'CodexZhLauncher.Shared.i18n-bootstrap.js' },
     @{ Path = (Join-Path $sharedDir 'locale-script.js'); Name = 'CodexZhLauncher.Shared.locale-script.js' },
     @{ Path = (Join-Path $sharedDir 'menu-script.js'); Name = 'CodexZhLauncher.Shared.menu-script.js' },
     @{ Path = (Join-Path $sharedDir 'menu-translations.json'); Name = 'CodexZhLauncher.Shared.menu-translations.json' }

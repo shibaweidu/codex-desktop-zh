@@ -18,15 +18,24 @@ final class LocalizationRuntimeTests: XCTestCase {
         let report = try await runtime.launch(install: install(), locale: "zh-CN")
 
         XCTAssertTrue(report.complete)
-        XCTAssertEqual(report.processID, 901)
-        XCTAssertEqual(launcher.launches.count, 2)
-        XCTAssertEqual(processService.gracefulExitCount, 1)
-        XCTAssertTrue(launcher.launches[1].contains("--remote-debugging-address=127.0.0.1"))
-        XCTAssertTrue(launcher.launches[1].contains("--remote-allow-origins=http://127.0.0.1:9224"))
-        XCTAssertTrue(launcher.launches[1].contains("--lang=zh-CN"))
+        XCTAssertEqual(report.processID, 900)
+        XCTAssertEqual(launcher.launches.count, 1)
+        XCTAssertEqual(processService.gracefulExitCount, 0)
+        XCTAssertTrue(launcher.launches[0].contains("--remote-debugging-address=127.0.0.1"))
+        XCTAssertTrue(launcher.launches[0].contains("--remote-allow-origins=http://127.0.0.1:9222"))
+        XCTAssertTrue(launcher.launches[0].contains("--lang=zh-CN"))
         let expressions = await devTools.expressions
+        XCTAssertTrue(expressions.contains { $0.contains("72216192") && $0.contains("enable_i18n") })
         XCTAssertTrue(expressions.contains { $0.contains("隐藏其他应用") })
         XCTAssertTrue(expressions.contains { $0.contains("localeOverride") })
+        let installedScripts = await devTools.installedScripts
+        XCTAssertEqual(installedScripts.count, 1)
+        XCTAssertTrue(installedScripts[0].contains("locale_source"))
+        let operations = await devTools.operations
+        XCTAssertLessThan(
+            try XCTUnwrap(operations.firstIndex(of: "install-bootstrap")),
+            try XCTUnwrap(operations.firstIndex(of: "set-locale"))
+        )
         let evaluatedURLs = await devTools.evaluatedURLs
         XCTAssertTrue(evaluatedURLs.contains { $0.contains("/empty") })
         XCTAssertTrue(evaluatedURLs.contains { $0.contains("/content") })
@@ -135,6 +144,8 @@ private final class RestartingProcessService: CodexProcessServing {
 private actor FakeDevTools: DevToolsServing {
     var expressions: [String] = []
     var evaluatedURLs: [String] = []
+    var installedScripts: [String] = []
+    var operations: [String] = []
     var localeApplicationURL: String?
     var verificationURL: String?
 
@@ -167,6 +178,12 @@ private actor FakeDevTools: DevToolsServing {
         )
     }
 
+    func installNewDocumentScript(webSocketURL: String, script: String) async throws -> String? {
+        installedScripts.append(script)
+        operations.append("install-bootstrap")
+        return "script-1"
+    }
+
     func evaluate(webSocketURL: String, expression: String, awaitPromise: Bool) async throws -> String? {
         expressions.append(expression)
         evaluatedURLs.append(webSocketURL)
@@ -176,7 +193,10 @@ private actor FakeDevTools: DevToolsServing {
             }
             return "{\"codexZhProbe\":true,\"hasBridge\":false,\"textLength\":240,\"readyState\":\"complete\",\"documentLanguage\":\"zh-CN\"}"
         }
-        if expression.contains("localeOverride") { localeApplicationURL = webSocketURL }
+        if expression.contains("localeOverride") {
+            localeApplicationURL = webSocketURL
+            operations.append("set-locale")
+        }
         if expression.contains("zhMarkers") { verificationURL = webSocketURL }
         return "{\"status\":\"ok\"}"
     }

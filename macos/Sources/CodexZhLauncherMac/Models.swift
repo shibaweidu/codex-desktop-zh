@@ -94,6 +94,7 @@ protocol AppLaunching {
 protocol DevToolsServing {
     func waitForTarget(port: UInt16, preferredType: String, timeout: TimeInterval) async throws -> DevToolsTarget
     func listTargets(port: UInt16) async throws -> [DevToolsTarget]
+    func installNewDocumentScript(webSocketURL: String, script: String) async throws -> String?
     func evaluate(webSocketURL: String, expression: String, awaitPromise: Bool) async throws -> String?
 }
 

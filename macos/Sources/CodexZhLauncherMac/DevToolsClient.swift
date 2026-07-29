@@ -35,7 +35,39 @@ final class DevToolsClient: DevToolsServing {
         try await readTargets(port: port)
     }
 
+    func installNewDocumentScript(webSocketURL: String, script: String) async throws -> String? {
+        let result = try await sendCommand(
+            webSocketURL: webSocketURL,
+            method: "Page.addScriptToEvaluateOnNewDocument",
+            params: ["source": script]
+        )
+        return result?["identifier"].map { String(describing: $0) }
+    }
+
     func evaluate(webSocketURL: String, expression: String, awaitPromise: Bool) async throws -> String? {
+        let result = try await sendCommand(
+            webSocketURL: webSocketURL,
+            method: "Runtime.evaluate",
+            params: [
+                "expression": expression,
+                "awaitPromise": awaitPromise,
+                "returnByValue": true,
+                "userGesture": true,
+                "allowUnsafeEvalBlockedByCSP": true
+            ]
+        )
+        if let exception = result?["exceptionDetails"] {
+            throw ClientError.evaluationFailed(String(describing: exception))
+        }
+        let inner = result?["result"] as? [String: Any]
+        return inner?["value"].map { String(describing: $0) }
+    }
+
+    private func sendCommand(
+        webSocketURL: String,
+        method: String,
+        params: [String: Any]
+    ) async throws -> [String: Any]? {
         guard let url = URL(string: webSocketURL) else { throw ClientError.invalidWebSocketURL }
         let openDelegate = WebSocketOpenDelegate()
         let webSocketSession = URLSession(
@@ -65,13 +97,8 @@ final class DevToolsClient: DevToolsServing {
 
         let request: [String: Any] = [
             "id": 1,
-            "method": "Runtime.evaluate",
-            "params": [
-                "expression": expression,
-                "awaitPromise": awaitPromise,
-                "returnByValue": true,
-                "userGesture": true
-            ]
+            "method": method,
+            "params": params
         ]
         let data = try JSONSerialization.data(withJSONObject: request)
         do {
@@ -80,7 +107,7 @@ final class DevToolsClient: DevToolsServing {
             throw ClientError.connectionFailed(error.localizedDescription)
         }
 
-        return try await withThrowingTaskGroup(of: String?.self) { group in
+        let responseData = try await withThrowingTaskGroup(of: Data?.self) { group in
             group.addTask {
                 while true {
                     let message = try await socket.receive()
@@ -92,15 +119,7 @@ final class DevToolsClient: DevToolsServing {
                     }
                     guard let object = try JSONSerialization.jsonObject(with: payload) as? [String: Any],
                           (object["id"] as? NSNumber)?.intValue == 1 else { continue }
-                    if let error = object["error"] {
-                        throw ClientError.protocolError(String(describing: error))
-                    }
-                    guard let result = object["result"] as? [String: Any] else { return nil }
-                    if let exception = result["exceptionDetails"] {
-                        throw ClientError.evaluationFailed(String(describing: exception))
-                    }
-                    let inner = result["result"] as? [String: Any]
-                    return inner?["value"].map { String(describing: $0) }
+                    return payload
                 }
             }
             group.addTask {
@@ -112,6 +131,14 @@ final class DevToolsClient: DevToolsServing {
             group.cancelAll()
             return result
         }
+        guard let responseData,
+              let object = try JSONSerialization.jsonObject(with: responseData) as? [String: Any] else {
+            return nil
+        }
+        if let error = object["error"] {
+            throw ClientError.protocolError(String(describing: error))
+        }
+        return object["result"] as? [String: Any]
     }
 
     static func origin(forWebSocketURL url: URL) -> String? {

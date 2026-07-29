@@ -2,6 +2,15 @@
 
 本项目遵循 [Semantic Versioning](https://semver.org/)。
 
+## [0.7.5] - 2026-07-29
+
+### Fixed
+
+- macOS 在页面加载前启用 Codex 动态配置 `72216192` 中的 `enable_i18n`，使官方中文资源实际参与渲染
+- 强制动态配置的 `locale_source` 为 `SYSTEM`，并同步覆盖 `navigator.language` / `navigator.languages`
+- 通过 `Page.addScriptToEvaluateOnNewDocument` 注册补丁，写入 `localeOverride` 后在同一进程内刷新，避免完整重启导致补丁丢失
+- DevTools 命令增加通用发送逻辑及 CSP 安全求值选项，日志记录 i18n 引导安装结果
+
 ## [0.7.4] - 2026-07-29
 
 ### Fixed

@@ -4,7 +4,7 @@ English | [简体中文](README.md)
 
 ![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS-5B8DEF)
 ![Architecture](https://img.shields.io/badge/architecture-x64%20%7C%20arm64-6D7280)
-![Version](https://img.shields.io/badge/version-v0.7.4-C4B5FD)
+![Version](https://img.shields.io/badge/version-v0.7.5-C4B5FD)
 ![License](https://img.shields.io/badge/license-MIT-31B77A)
 
 **Codex Desktop Chinese Localization Enhancer** is a Windows and macOS launcher for enabling the Chinese UI and translating native Electron menus in Codex Desktop. It supports Microsoft Store, portable, and macOS App Bundle installations, verified process shutdown, and automatic restart in Chinese mode.
@@ -17,7 +17,7 @@ The tool does not unpack or replace `app.asar`, modify the Microsoft Store insta
 - Supports portable `Codex.exe` and `ChatGPT.exe` installations
 - Detects `Codex.app` and `ChatGPT.app` in `/Applications` and `~/Applications`
 - Provides a native SwiftUI application for Apple Silicon and Intel Macs running macOS 13+
-- Enables the built-in `zh-CN` UI through the Codex settings bridge
+- Enables Codex's built-in i18n dynamic configuration before page load, then selects `zh-CN` through the settings bridge
 - Translates native Electron application menus at runtime
 - Reports menu labels that need compatibility updates
 - Safely closes a running Codex instance before localization and restart

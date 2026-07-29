@@ -31,6 +31,10 @@ struct SharedResources {
         return try replacing(template, placeholder: "__LOCALE_JSON__", value: encoded)
     }
 
+    func buildI18nBootstrap() throws -> String {
+        try read("i18n-bootstrap.js")
+    }
+
     func buildMenuScript(platform: String = "macos") throws -> String {
         let groups: TranslationGroups = try decode("menu-translations.json")
         var translations = groups.common
@@ -47,11 +51,16 @@ struct SharedResources {
 
     func selfTest() throws -> String {
         let locale = try buildLocaleScript(locale: "zh-CN")
+        let bootstrap = try buildI18nBootstrap()
         let menu = try buildMenuScript()
         let groups: TranslationGroups = try decode("menu-translations.json")
         guard locale.contains("vscode://codex/set-setting"),
               locale.contains("JSON.stringify({ key: 'localeOverride', value: locale })"),
               !locale.contains("params: { key: 'localeOverride'"),
+              bootstrap.contains("72216192"),
+              bootstrap.contains("enable_i18n"),
+              bootstrap.contains("locale_source"),
+              bootstrap.contains("getDynamicConfig"),
               menu.contains("Menu.setApplicationMenu"),
               menu.contains("隐藏其他应用"),
               menu.contains("前置全部窗口"),
@@ -59,7 +68,7 @@ struct SharedResources {
               !menu.localizedCaseInsensitiveContains("app.asar") else {
             throw ResourceError.selfTestFailed
         }
-        return "locale-script=ok; menu-script=ok; translations=\(groups.common.count + groups.macos.count)"
+        return "i18n-bootstrap=ok; locale-script=ok; menu-script=ok; translations=\(groups.common.count + groups.macos.count)"
     }
 
     private func read(_ name: String) throws -> String {

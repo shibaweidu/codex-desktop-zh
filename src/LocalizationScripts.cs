@@ -9,6 +9,7 @@ namespace CodexZhLauncher
 {
     internal static class LocalizationScripts
     {
+        private const string I18nBootstrapResource = "CodexZhLauncher.Shared.i18n-bootstrap.js";
         private const string LocaleResource = "CodexZhLauncher.Shared.locale-script.js";
         private const string MenuResource = "CodexZhLauncher.Shared.menu-script.js";
         private const string TranslationsResource = "CodexZhLauncher.Shared.menu-translations.json";
@@ -45,9 +46,15 @@ namespace CodexZhLauncher
 
         public static string SelfTest()
         {
+            var bootstrap = ReadResource(I18nBootstrapResource);
             var locale = BuildLocaleScript("zh-CN");
             var windowsMenu = BuildMenuScriptForPlatform("windows");
             var macMenu = BuildMenuScriptForPlatform("macos");
+            if (bootstrap.IndexOf("72216192", StringComparison.Ordinal) < 0 ||
+                bootstrap.IndexOf("enable_i18n", StringComparison.Ordinal) < 0 ||
+                bootstrap.IndexOf("locale_source", StringComparison.Ordinal) < 0 ||
+                bootstrap.IndexOf("getDynamicConfig", StringComparison.Ordinal) < 0)
+                throw new InvalidOperationException("i18n 引导脚本缺少必要的动态配置补丁。 ");
             if (locale.IndexOf("localeOverride", StringComparison.Ordinal) < 0 ||
                 locale.IndexOf("vscode://codex/set-setting", StringComparison.Ordinal) < 0)
                 throw new InvalidOperationException("语言脚本缺少官方设置接口。 ");
@@ -69,7 +76,7 @@ namespace CodexZhLauncher
             if (windowsMenu.IndexOf("app.asar", StringComparison.OrdinalIgnoreCase) >= 0 ||
                 macMenu.IndexOf("app.asar", StringComparison.OrdinalIgnoreCase) >= 0)
                 throw new InvalidOperationException("菜单脚本不应修改 app.asar。 ");
-            return "locale-script=ok; menu-script=ok; translations=" + MergeTranslations("windows").Count +
+            return "i18n-bootstrap=ok; locale-script=ok; menu-script=ok; translations=" + MergeTranslations("windows").Count +
                 "; macos-translations=" + MergeTranslations("macos").Count;
         }
 

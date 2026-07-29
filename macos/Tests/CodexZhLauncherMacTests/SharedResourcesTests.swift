@@ -5,9 +5,14 @@ import XCTest
 final class SharedResourcesTests: XCTestCase {
     func testSharedResourcesResolveAllPlaceholders() throws {
         let resources = try SharedResources(rootURL: sharedDirectory())
+        let bootstrap = try resources.buildI18nBootstrap()
         let locale = try resources.buildLocaleScript(locale: "zh-CN")
         let menu = try resources.buildMenuScript(platform: "macos")
 
+        XCTAssertTrue(bootstrap.contains("72216192"))
+        XCTAssertTrue(bootstrap.contains("enable_i18n"))
+        XCTAssertTrue(bootstrap.contains("locale_source"))
+        XCTAssertTrue(bootstrap.contains("getDynamicConfig"))
         XCTAssertTrue(locale.contains("localeOverride"))
         XCTAssertFalse(locale.contains("__LOCALE_JSON__"))
         XCTAssertTrue(menu.contains("隐藏其他应用"))
@@ -22,6 +27,9 @@ final class SharedResourcesTests: XCTestCase {
         let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         defer { try? FileManager.default.removeItem(at: root) }
         try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        try "72216192 enable_i18n locale_source getDynamicConfig".write(
+            to: root.appendingPathComponent("i18n-bootstrap.js"), atomically: true, encoding: .utf8
+        )
         try "__LOCALE_JSON__".write(to: root.appendingPathComponent("locale-script.js"), atomically: true, encoding: .utf8)
         try "var translations = __TRANSLATIONS_JSON__; var platform = __PLATFORM_JSON__;".write(
             to: root.appendingPathComponent("menu-script.js"), atomically: true, encoding: .utf8

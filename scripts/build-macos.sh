@@ -19,7 +19,7 @@ cd "$ROOT/macos"
 swift build -c release --arch "$ARCH"
 BUILD="$(swift build -c release --arch "$ARCH" --show-bin-path)"
 cp "$BUILD/CodexZhLauncherMac" "$CONTENTS/MacOS/CodexZhLauncherMac"
-cp "$ROOT/shared/locale-script.js" "$ROOT/shared/menu-script.js" "$ROOT/shared/menu-translations.json" "$CONTENTS/Resources/shared/"
+cp "$ROOT/shared/i18n-bootstrap.js" "$ROOT/shared/locale-script.js" "$ROOT/shared/menu-script.js" "$ROOT/shared/menu-translations.json" "$CONTENTS/Resources/shared/"
 
 cat > "$CONTENTS/Info.plist" <<'PLIST'
 <?xml version="1.0" encoding="UTF-8"?>
@@ -33,8 +33,8 @@ cat > "$CONTENTS/Info.plist" <<'PLIST'
   <key>CFBundleInfoDictionaryVersion</key><string>6.0</string>
   <key>CFBundleName</key><string>Codex 汉化增强工具</string>
   <key>CFBundlePackageType</key><string>APPL</string>
-  <key>CFBundleShortVersionString</key><string>0.7.4</string>
-  <key>CFBundleVersion</key><string>0.7.4</string>
+  <key>CFBundleShortVersionString</key><string>0.7.5</string>
+  <key>CFBundleVersion</key><string>0.7.5</string>
   <key>LSMinimumSystemVersion</key><string>13.0</string>
   <key>NSHighResolutionCapable</key><true/>
 </dict></plist>

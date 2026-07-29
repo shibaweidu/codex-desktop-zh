@@ -11,7 +11,7 @@ struct LogEntry: Identifiable {
 
 @MainActor
 final class LauncherModel: ObservableObject {
-    static let version = "0.7.4"
+    static let version = "0.7.5"
     static let sponsorURL = URL(string: "https://www.appkaola.com")!
 
     @Published private(set) var install: CodexInstall?
