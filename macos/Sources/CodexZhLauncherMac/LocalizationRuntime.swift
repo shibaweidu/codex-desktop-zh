@@ -67,10 +67,12 @@ struct LocalizationRuntime {
             emit("Codex 已重新启动，正在验证最终界面。", progress)
         }
 
-        async let menuResult = applyMenuIfNeeded(port: report.inspectorPort, locale: locale)
+        let finalRendererPort = report.rendererPort
+        let finalInspectorPort = report.inspectorPort
+        async let menuResult = applyMenuIfNeeded(port: finalInspectorPort, locale: locale)
         do {
             await sleeper.sleep(seconds: 1.5)
-            let verification = try await verifyLocale(port: report.rendererPort, locale: locale)
+            let verification = try await verifyLocale(port: finalRendererPort, locale: locale)
             report.localeApplied = hasStatus(verification, "ok")
             report.localeDetail = join(report.localeDetail, "verification=\(verification)")
         } catch {
