@@ -36,6 +36,7 @@ struct LocalizationRuntime {
         let arguments = [
             "--remote-debugging-address=127.0.0.1",
             "--remote-debugging-port=\(report.rendererPort)",
+            "--remote-allow-origins=http://127.0.0.1:\(report.rendererPort)",
             "--inspect=127.0.0.1:\(report.inspectorPort)",
             "--lang=\(locale)"
         ]

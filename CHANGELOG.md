@@ -2,6 +2,14 @@
 
 本项目遵循 [Semantic Versioning](https://semver.org/)。
 
+## [0.7.1] - 2026-07-29
+
+### Fixed
+
+- macOS 等待 DevTools WebSocket 握手成功后再执行汉化脚本，并使用 CDP 文本帧
+- macOS 为随机回环调试端口配置精确 Origin，兼容新版 Codex / Electron 的连接校验
+- WebSocket 握手失败时记录具体错误，不再只显示“Socket 未连接”
+
 ## [0.7.0] - 2026-07-29
 
 ### Added

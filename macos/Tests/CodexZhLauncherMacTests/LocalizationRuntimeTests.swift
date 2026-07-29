@@ -19,6 +19,7 @@ final class LocalizationRuntimeTests: XCTestCase {
         XCTAssertTrue(report.complete)
         XCTAssertEqual(report.processID, 900)
         XCTAssertTrue(launcher.arguments.contains("--remote-debugging-address=127.0.0.1"))
+        XCTAssertTrue(launcher.arguments.contains("--remote-allow-origins=http://127.0.0.1:9222"))
         XCTAssertTrue(launcher.arguments.contains("--lang=zh-CN"))
         let expressions = await devTools.expressions
         XCTAssertTrue(expressions.contains { $0.contains("隐藏其他应用") })
@@ -61,6 +62,13 @@ final class LocalizationRuntimeTests: XCTestCase {
             .deletingLastPathComponent()
             .deletingLastPathComponent()
             .appendingPathComponent("shared", isDirectory: true)
+    }
+}
+
+final class DevToolsClientTests: XCTestCase {
+    func testWebSocketOriginMatchesRandomLoopbackPort() throws {
+        let url = try XCTUnwrap(URL(string: "ws://127.0.0.1:43821/devtools/page/abc"))
+        XCTAssertEqual(DevToolsClient.origin(forWebSocketURL: url), "http://127.0.0.1:43821")
     }
 }
 
