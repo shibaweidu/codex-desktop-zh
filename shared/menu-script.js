@@ -43,6 +43,7 @@
   var inspected = 0;
   var untranslated = [];
   var untranslatedSeen = Object.create(null);
+  var isBrandLabel = function (label) { return label === 'ChatGPT' || label === 'Codex'; };
   var patternTranslation = function (label) {
     var goToChat = /^Go to Chat (\d+)$/.exec(label);
     if (goToChat) return '转到对话 ' + goToChat[1];
@@ -66,7 +67,7 @@
     if (translated) {
       item.label = translated;
       changed += 1;
-    } else if (label && !/[\u3400-\u9fff]/.test(label) && !untranslatedSeen[label]) {
+    } else if (label && !isBrandLabel(label) && !/[\u3400-\u9fff]/.test(label) && !untranslatedSeen[label]) {
       untranslatedSeen[label] = true;
       untranslated.push(label);
     }

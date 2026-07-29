@@ -189,9 +189,12 @@ private actor FakeDevTools: DevToolsServing {
         evaluatedURLs.append(webSocketURL)
         if expression.contains("codexZhProbe") {
             if webSocketURL.contains("/empty") {
-                return "{\"codexZhProbe\":true,\"hasBridge\":true,\"textLength\":0,\"readyState\":\"complete\",\"documentLanguage\":\"en\"}"
+                return "{\"codexZhProbe\":true,\"hasBridge\":true,\"hasAppRoot\":true,\"textLength\":0,\"readyState\":\"complete\",\"documentLanguage\":\"en\"}"
             }
-            return "{\"codexZhProbe\":true,\"hasBridge\":false,\"textLength\":240,\"readyState\":\"complete\",\"documentLanguage\":\"zh-CN\"}"
+            return "{\"codexZhProbe\":true,\"hasBridge\":false,\"hasAppRoot\":true,\"textLength\":240,\"readyState\":\"complete\",\"documentLanguage\":\"zh-CN\"}"
+        }
+        if expression.contains("finalState.patchedClients") {
+            return "{\"status\":\"ok\",\"patchedClients\":1,\"patchedConfigs\":1}"
         }
         if expression.contains("localeOverride") {
             localeApplicationURL = webSocketURL

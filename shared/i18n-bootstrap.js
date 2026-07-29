@@ -1,8 +1,13 @@
 (function () {
   var configId = '72216192';
   var locale = 'zh-CN';
-  var patchedClients = 0;
-  var patchedConfigs = 0;
+  var state = globalThis.__codexZhI18nState || {
+    configId: configId,
+    patchedClients: 0,
+    patchedConfigs: 0,
+    lastPatchAt: 0
+  };
+  try { globalThis.__codexZhI18nState = state; } catch (_) {}
 
   function forceConfig(config) {
     if (!config || (typeof config !== 'object' && typeof config !== 'function')) return config;
@@ -29,7 +34,8 @@
         config.value.locale_source = 'SYSTEM';
       }
     } catch (_) {}
-    patchedConfigs += 1;
+    state.patchedConfigs += 1;
+    state.lastPatchAt = Date.now();
     return config;
   }
 
@@ -47,12 +53,14 @@
         }
       });
       Object.defineProperty(client, '__codexZhI18nClient', { value: true, configurable: true });
-      patchedClients += 1;
+      state.patchedClients += 1;
+      state.lastPatchAt = Date.now();
     } catch (_) {}
   }
 
   function patchGlobal(statsig) {
     if (!statsig || typeof statsig !== 'object') return;
+    patchClient(statsig);
     patchClient(statsig.firstInstance);
     patchClient(statsig.instance);
     var instances = statsig.instances;
@@ -62,21 +70,17 @@
   }
 
   function installStatsigHook() {
-    var current;
-    try { current = globalThis.__STATSIG__; } catch (_) {}
-    try {
-      Object.defineProperty(globalThis, '__STATSIG__', {
-        configurable: true,
-        get: function () { return current; },
-        set: function (value) {
-          current = value;
-          patchGlobal(value);
-        }
-      });
-    } catch (_) {}
-    patchGlobal(current);
-    window.setInterval(function () {
+    var patchCurrent = function () {
       try { patchGlobal(globalThis.__STATSIG__); } catch (_) {}
+    };
+    patchCurrent();
+    var attempts = 0;
+    var timer = window.setInterval(function () {
+      patchCurrent();
+      attempts += 1;
+      if (attempts >= 400 || (state.patchedClients > 0 && state.patchedConfigs > 0)) {
+        window.clearInterval(timer);
+      }
     }, 50);
   }
 
@@ -93,11 +97,12 @@
 
   installStatsigHook();
   return JSON.stringify({
-    status: 'ok',
+    status: state.patchedClients > 0 && state.patchedConfigs > 0 ? 'ok' : 'pending',
     configId: configId,
     enable_i18n: true,
     locale_source: 'SYSTEM',
-    patchedClients: patchedClients,
-    patchedConfigs: patchedConfigs
+    patchedClients: state.patchedClients,
+    patchedConfigs: state.patchedConfigs,
+    lastPatchAt: state.lastPatchAt
   });
 })()

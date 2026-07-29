@@ -42,12 +42,16 @@ struct LocalizationRuntime {
                 port: started.rendererPort,
                 timeout: 25,
                 requireBridge: true,
-                requireContent: false
+                requireContent: false,
+                requireAppRoot: true
             )
             if locale.lowercased().hasPrefix("zh") {
                 emit("正在启用 Codex 官方中文资源。", progress)
                 let bootstrap = try await installI18nBootstrap(selection: selected)
                 report.localeDetail = "bootstrap=\(bootstrap)"
+                guard hasStatus(bootstrap, "ok") else {
+                    throw RuntimeError.i18nBootstrapUnavailable(bootstrap)
+                }
             }
             let setting = try await applyLocale(selection: selected, locale: locale)
             report.localeDetail = join(report.localeDetail, "setting=\(setting)")
@@ -125,11 +129,11 @@ struct LocalizationRuntime {
         let identifier = try await devTools.installNewDocumentScript(webSocketURL: socket, script: script)
         let current = try await devTools.evaluate(
             webSocketURL: socket,
-            expression: script,
-            awaitPromise: false
+            expression: script + ";\n" + i18nBootstrapWaitScript,
+            awaitPromise: true
         ) ?? ""
         logger.write("i18n.bootstrap identifier=\(identifier ?? "unknown") current=\(current)")
-        return "{\"status\":\"ok\",\"newDocument\":true,\"identifier\":\(jsonString(identifier ?? "unknown")),\"current\":\(jsonString(current))}"
+        return bootstrapResult(identifier: identifier, current: current)
     }
 
     private func applyLocale(selection: RendererSelection, locale: String) async throws -> String {
@@ -165,7 +169,8 @@ struct LocalizationRuntime {
             port: port,
             timeout: 12,
             requireBridge: false,
-            requireContent: true
+            requireContent: true,
+            requireAppRoot: true
         )
         let target = selected.target
         guard let socket = target.webSocketDebuggerUrl else { throw RuntimeError.missingWebSocket }
@@ -187,7 +192,8 @@ struct LocalizationRuntime {
           var documentLanguage = document.documentElement.lang || '';
           var languageMatches = documentLanguage.toLowerCase().indexOf(expectsChinese ? 'zh' : 'en') === 0;
           var markerMatches = expectsChinese ? (zhMatches > 0 && enMatches === 0) : enMatches > 0;
-          return JSON.stringify({ status: (languageMatches || markerMatches) ? 'ok' : 'partial', requested: requested, targetType: \(encodedTargetType(target.type)), navigatorLanguage: navigator.language, documentLanguage: documentLanguage, textLength: text.length, probeTextLength: \(selected.probe.textLength), zhMarkers: zhMatches, enMarkers: enMatches });
+          var bootstrapState = window.__codexZhI18nState || {};
+          return JSON.stringify({ status: (languageMatches || markerMatches) ? 'ok' : 'partial', requested: requested, targetType: \(encodedTargetType(target.type)), targetURL: location.href, navigatorLanguage: navigator.language, documentLanguage: documentLanguage, textLength: text.length, probeTextLength: \(selected.probe.textLength), zhMarkers: zhMatches, enMarkers: enMatches, i18nPatchedClients: bootstrapState.patchedClients || 0, i18nPatchedConfigs: bootstrapState.patchedConfigs || 0 });
         })()
         """
         return try await devTools.evaluate(webSocketURL: socket, expression: script, awaitPromise: true) ?? ""
@@ -197,10 +203,10 @@ struct LocalizationRuntime {
         port: UInt16,
         timeout: TimeInterval,
         requireBridge: Bool,
-        requireContent: Bool
+        requireContent: Bool,
+        requireAppRoot: Bool
     ) async throws -> RendererSelection {
         let deadline = Date().addingTimeInterval(timeout)
-        var best: RendererSelection?
         var lastError: Error?
         while Date() < deadline {
             do {
@@ -221,11 +227,11 @@ struct LocalizationRuntime {
                         ) ?? ""
                         guard let probe = RendererProbe(json: value) else { continue }
                         let selection = RendererSelection(target: target, probe: probe)
-                        if best == nil || probe.score > best!.probe.score { best = selection }
                         let bridgeMatches = !requireBridge || probe.hasBridge
-                        let contentMatches = !requireContent || probe.textLength >= 40
-                        if bridgeMatches && contentMatches {
-                            logger.write("renderer.selected type=\(target.type) bridge=\(probe.hasBridge) text_length=\(probe.textLength) ready=\(probe.readyState)")
+                        let contentMatches = !requireContent || (probe.hasAppRoot && probe.textLength >= 40)
+                        let appRootMatches = !requireAppRoot || probe.hasAppRoot
+                        if bridgeMatches && contentMatches && appRootMatches {
+                            logger.write("renderer.selected type=\(target.type) url=\(target.url ?? "") bridge=\(probe.hasBridge) root=\(probe.hasAppRoot) text_length=\(probe.textLength) ready=\(probe.readyState)")
                             return selection
                         }
                     } catch {
@@ -237,10 +243,6 @@ struct LocalizationRuntime {
             }
             await sleeper.sleep(seconds: 0.3)
         }
-        if let best {
-            logger.write("renderer.fallback type=\(best.target.type) bridge=\(best.probe.hasBridge) text_length=\(best.probe.textLength)")
-            return best
-        }
         let suffix = lastError.map { "：\($0.localizedDescription)" } ?? ""
         throw RuntimeError.rendererTargetUnavailable(suffix)
     }
@@ -249,13 +251,36 @@ struct LocalizationRuntime {
         """
         (function () {
           var text = document.body ? document.body.innerText || '' : '';
-          return JSON.stringify({ codexZhProbe: true, hasBridge: !!(window.electronBridge && typeof window.electronBridge.sendMessageFromView === 'function'), textLength: text.length, readyState: document.readyState || '', documentLanguage: document.documentElement.lang || '' });
+          return JSON.stringify({ codexZhProbe: true, hasBridge: !!(window.electronBridge && typeof window.electronBridge.sendMessageFromView === 'function'), hasAppRoot: !!document.querySelector('#root'), textLength: text.length, readyState: document.readyState || '', documentLanguage: document.documentElement.lang || '' });
+        })()
+        """
+    }
+
+    private var i18nBootstrapWaitScript: String {
+        """
+        (async function () {
+          var started = Date.now();
+          while (Date.now() - started < 10000) {
+            var state = window.__codexZhI18nState || {};
+            if ((state.patchedClients || 0) > 0 && (state.patchedConfigs || 0) > 0) break;
+            await new Promise(function (resolve) { window.setTimeout(resolve, 100); });
+          }
+          var finalState = window.__codexZhI18nState || {};
+          return JSON.stringify({
+            status: (finalState.patchedClients || 0) > 0 && (finalState.patchedConfigs || 0) > 0 ? 'ok' : 'partial',
+            configId: '72216192',
+            enable_i18n: true,
+            locale_source: 'SYSTEM',
+            patchedClients: finalState.patchedClients || 0,
+            patchedConfigs: finalState.patchedConfigs || 0
+          });
         })()
         """
     }
 
     private func rendererMetadataScore(_ target: DevToolsTarget) -> Int {
         var score = 0
+        if target.url?.localizedCaseInsensitiveContains("index.html") == true { score += 100 }
         if target.type.caseInsensitiveCompare("iframe") == .orderedSame ||
             target.type.caseInsensitiveCompare("webview") == .orderedSame { score += 20 }
         if let url = target.url, !url.isEmpty, url != "about:blank" { score += 10 }
@@ -270,9 +295,18 @@ struct LocalizationRuntime {
         return String(decoding: data, as: UTF8.self)
     }
 
-    private func jsonString(_ value: String) -> String {
-        guard let data = try? JSONSerialization.data(withJSONObject: value, options: [.fragmentsAllowed]) else {
-            return "\"\""
+    private func bootstrapResult(identifier: String?, current: String) -> String {
+        var result: [String: Any]
+        if let data = current.data(using: .utf8),
+           let decoded = try? JSONSerialization.jsonObject(with: data) as? [String: Any] {
+            result = decoded
+        } else {
+            result = ["status": "partial", "reason": "bootstrap-result-unreadable", "current": current]
+        }
+        result["newDocument"] = true
+        result["identifier"] = identifier ?? "unknown"
+        guard let data = try? JSONSerialization.data(withJSONObject: result, options: [.sortedKeys]) else {
+            return "{\"status\":\"partial\",\"reason\":\"bootstrap-result-encode-failed\"}"
         }
         return String(decoding: data, as: UTF8.self)
     }
@@ -297,6 +331,7 @@ struct LocalizationRuntime {
         case invalidInstall
         case alreadyRunning(Int)
         case missingWebSocket
+        case i18nBootstrapUnavailable(String)
         case rendererTargetUnavailable(String)
 
         var errorDescription: String? {
@@ -304,6 +339,7 @@ struct LocalizationRuntime {
             case .invalidInstall: return "未检测到可用的 Codex Desktop。"
             case .alreadyRunning(let count): return "Codex 仍在运行（检测到 \(count) 个候选进程）。"
             case .missingWebSocket: return "DevTools 目标缺少 WebSocket 地址。"
+            case .i18nBootstrapUnavailable(let detail): return "Codex 官方中文资源未加载：\(detail)"
             case .rendererTargetUnavailable(let suffix): return "未找到可用于汉化的界面调试目标\(suffix)"
             }
         }
@@ -317,17 +353,17 @@ private struct RendererSelection {
 
 private struct RendererProbe {
     let hasBridge: Bool
+    let hasAppRoot: Bool
     let textLength: Int
     let readyState: String
     let documentLanguage: String
-
-    var score: Int { (hasBridge ? 10_000 : 0) + textLength }
 
     init?(json: String) {
         guard let data = json.data(using: .utf8),
               let values = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
               values["codexZhProbe"] as? Bool == true else { return nil }
         hasBridge = values["hasBridge"] as? Bool ?? false
+        hasAppRoot = values["hasAppRoot"] as? Bool ?? false
         textLength = (values["textLength"] as? NSNumber)?.intValue ?? 0
         readyState = values["readyState"] as? String ?? ""
         documentLanguage = values["documentLanguage"] as? String ?? ""

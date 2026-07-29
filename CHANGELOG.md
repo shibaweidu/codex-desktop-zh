@@ -2,6 +2,15 @@
 
 本项目遵循 [Semantic Versioning](https://semver.org/)。
 
+## [0.7.6] - 2026-07-30
+
+### Fixed
+
+- macOS 只选择带真实 `#root` 应用内容的渲染目标，不再把空白外层页面当作 Codex 界面
+- i18n 引导不再重定义 `__STATSIG__` 全局属性，避免阻断新版 Codex 初始化
+- 只有实际补丁到 Statsig 客户端和动态配置后才报告引导成功
+- 补齐 macOS 原生菜单中的系统编辑和朗读标签，并忽略 ChatGPT/Codex 品牌名
+
 ## [0.7.5] - 2026-07-29
 
 ### Fixed
