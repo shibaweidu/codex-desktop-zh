@@ -11,6 +11,9 @@ enum Program {
         if arguments.first == "--apply-update-macos" {
             Darwin.exit(MacUpdateInstaller.apply(arguments: arguments))
         }
+        if arguments.first == "--apply-update-macos-test" {
+            Darwin.exit(MacUpdateInstaller.apply(arguments: arguments, restart: false))
+        }
         if let command = arguments.first {
             Task {
                 let exitCode = await runCLI(command: command)

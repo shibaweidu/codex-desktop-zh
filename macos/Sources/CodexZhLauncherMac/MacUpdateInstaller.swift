@@ -93,7 +93,7 @@ enum MacUpdateInstaller {
         try process.run()
     }
 
-    static func apply(arguments: [String]) -> Int32 {
+    static func apply(arguments: [String], restart: Bool = true) -> Int32 {
         guard arguments.count == 6, let parentPID = Int32(arguments[1]) else { return 2 }
         do {
             let target = URL(fileURLWithPath: arguments[2], isDirectory: true).standardizedFileURL
@@ -110,7 +110,7 @@ enum MacUpdateInstaller {
             do {
                 try FileManager.default.copyItem(at: staged, to: target)
                 _ = try validateBundle(target, expectedVersion: version)
-                try run("/usr/bin/open", arguments: ["-n", target.path])
+                if restart { try run("/usr/bin/open", arguments: ["-n", target.path]) }
                 try? FileManager.default.removeItem(at: backup)
                 try? FileManager.default.removeItem(at: root)
                 return 0
