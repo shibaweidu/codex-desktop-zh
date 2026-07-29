@@ -4,7 +4,7 @@ English | [简体中文](README.md)
 
 ![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS-5B8DEF)
 ![Architecture](https://img.shields.io/badge/architecture-x64%20%7C%20arm64-6D7280)
-![Version](https://img.shields.io/badge/version-v0.6.0-C4B5FD)
+![Version](https://img.shields.io/badge/version-v0.6.1-C4B5FD)
 ![License](https://img.shields.io/badge/license-MIT-31B77A)
 
 **Codex Desktop Chinese Localization Enhancer** is a Windows and macOS launcher for enabling the Chinese UI and translating native Electron menus in Codex Desktop. It supports Microsoft Store, portable, and macOS App Bundle installations, verified process shutdown, and automatic restart in Chinese mode.
@@ -103,6 +103,10 @@ The packaged macOS app exposes `--self-test`, `--diagnostics`, `--launch-zh`, an
 Commit `src/`, `tests/`, `macos/`, `shared/`, `scripts/`, the PowerShell build/test scripts, repository documentation, and `.github/` automation. Do not commit `dist/`, `obj/`, `macos/.build/`, `macos/.artifacts/`, local logs, Codex installation files, credentials, tokens, or user project content.
 
 See [docs/PUBLISHING.md](docs/PUBLISHING.md) for repository and release instructions.
+
+## Sponsorship
+
+This project is sponsored by [Kao La API](https://www.appkaola.com). Sponsorship does not imply endorsement by or an official partnership with OpenAI, Microsoft, or Codex.
 
 ## License and Trademark Notice
 

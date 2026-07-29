@@ -4,10 +4,11 @@ namespace CodexZhLauncher
 {
     internal static class AppInfo
     {
-        public const string Version = "0.6.0";
+        public const string Version = "0.6.1";
         public const string RepositoryUrl = "https://github.com/shibaweidu/codex-desktop-zh";
         public const string FeedbackUrl = RepositoryUrl + "/issues/new/choose";
         public const string LatestReleaseUrl = RepositoryUrl + "/releases/latest";
+        public const string SponsorUrl = "https://www.appkaola.com";
 
         public static void OpenUrl(string url)
         {

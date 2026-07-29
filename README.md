@@ -4,14 +4,14 @@
 
 ![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS-5B8DEF)
 ![Architecture](https://img.shields.io/badge/architecture-x64%20%7C%20arm64-6D7280)
-![Version](https://img.shields.io/badge/version-v0.6.0-C4B5FD)
+![Version](https://img.shields.io/badge/version-v0.6.1-C4B5FD)
 ![License](https://img.shields.io/badge/license-MIT-31B77A)
 
 **Codex Desktop 中文汉化增强工具**是一款面向 Windows 和 macOS 的 Codex 汉化启动器。它支持 Microsoft Store、便携版和 macOS App Bundle，可启用中文界面、翻译 Electron 原生菜单，并在 Codex 已运行时安全关闭后以中文模式重新启动。
 
 项目不解包、不替换 `app.asar`，不修改 Microsoft Store 安装目录，也不读取 Codex 账号、令牌或项目文件。
 
-当前版本：`0.6.0`
+当前版本：`0.6.1`
 
 ## 主要功能
 
@@ -223,6 +223,10 @@ macOS 日志位于：
 ### macOS 为什么提示无法验证开发者？
 
 macOS ZIP 使用免费的 ad-hoc 签名，没有 Apple Developer ID 签名和公证，因此首次打开可能出现 Gatekeeper 提示。请使用上文的右键“打开”或“隐私与安全性 > 仍要打开”，不要执行关闭 Gatekeeper、允许任何来源或自动清除 quarantine 的命令。
+
+## 赞助支持
+
+本项目由 [Kao La API](https://www.appkaola.com) 赞助支持。赞助关系不代表 OpenAI、Microsoft 或 Codex 对该服务的认可或官方合作。
 
 ## 贡献与安全
 

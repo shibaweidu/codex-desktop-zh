@@ -2,6 +2,7 @@ using System;
 using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Interop;
 using System.Windows.Media;
@@ -121,6 +122,13 @@ namespace CodexZhLauncher
             Grid.SetRow(downloadButton, 3);
             root.Children.Add(downloadButton);
 
+            var footer = new Grid();
+            footer.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+            footer.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+            var sponsor = BuildTextLink("Kao La API 赞助支持", AppInfo.SponsorUrl);
+            sponsor.VerticalAlignment = VerticalAlignment.Center;
+            footer.Children.Add(sponsor);
+
             var links = new StackPanel
             {
                 Orientation = Orientation.Horizontal,
@@ -133,8 +141,10 @@ namespace CodexZhLauncher
             var repositoryButton = BuildButton("GitHub 仓库", false);
             repositoryButton.Click += delegate { AppInfo.OpenUrl(AppInfo.RepositoryUrl); };
             links.Children.Add(repositoryButton);
-            Grid.SetRow(links, 4);
-            root.Children.Add(links);
+            Grid.SetColumn(links, 1);
+            footer.Children.Add(links);
+            Grid.SetRow(footer, 4);
+            root.Children.Add(footer);
 
             Content = root;
         }
@@ -209,6 +219,23 @@ namespace CodexZhLauncher
                 Cursor = Cursors.Hand,
                 Template = template
             };
+        }
+
+        private static TextBlock BuildTextLink(string text, string url)
+        {
+            var container = new TextBlock { FontSize = 11 };
+            var link = new Hyperlink(new Run(text))
+            {
+                Foreground = TextSecondary,
+                TextDecorations = null,
+                Cursor = Cursors.Hand,
+                ToolTip = url
+            };
+            link.Click += delegate { AppInfo.OpenUrl(url); };
+            link.MouseEnter += delegate { link.Foreground = Accent; };
+            link.MouseLeave += delegate { link.Foreground = TextSecondary; };
+            container.Inlines.Add(link);
+            return container;
         }
 
         private static SolidColorBrush Brush(string value)

@@ -157,6 +157,24 @@ namespace CodexZhLauncher
                 Orientation = Orientation.Horizontal,
                 VerticalAlignment = VerticalAlignment.Center
             };
+            var sponsorText = new TextBlock
+            {
+                FontSize = 11,
+                Margin = new Thickness(0, 0, 15, 0),
+                VerticalAlignment = VerticalAlignment.Center
+            };
+            var sponsorLink = new Hyperlink(new Run("Kao La API 赞助支持"))
+            {
+                Foreground = TextSecondary,
+                TextDecorations = null,
+                Cursor = Cursors.Hand,
+                ToolTip = AppInfo.SponsorUrl
+            };
+            sponsorLink.Click += delegate { AppInfo.OpenUrl(AppInfo.SponsorUrl); };
+            sponsorLink.MouseEnter += delegate { sponsorLink.Foreground = Restart; };
+            sponsorLink.MouseLeave += delegate { sponsorLink.Foreground = TextSecondary; };
+            sponsorText.Inlines.Add(sponsorLink);
+            tools.Children.Add(sponsorText);
             tools.Children.Add(new TextBlock
             {
                 Text = "v" + AppInfo.Version,

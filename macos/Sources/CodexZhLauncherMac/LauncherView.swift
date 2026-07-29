@@ -42,6 +42,11 @@ struct LauncherView: View {
                     .foregroundStyle(.secondary)
             }
             Spacer()
+            Button("Kao La API 赞助支持") { model.openSponsor() }
+                .buttonStyle(.plain)
+                .font(.system(size: 11))
+                .foregroundStyle(.secondary)
+                .help("打开 www.appkaola.com")
             iconButton("info.circle", help: "关于与更新") { model.showsAbout = true }
             iconButton("doc.badge.gearshape", help: "选择 Codex.app") { model.selectApplication() }
             iconButton("folder", help: "打开日志目录") { model.openLogFolder() }

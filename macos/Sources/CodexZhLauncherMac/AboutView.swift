@@ -64,6 +64,11 @@ struct AboutView: View {
             Spacer()
 
             HStack(spacing: 10) {
+                Button("Kao La API 赞助支持") { model.openSponsor() }
+                    .buttonStyle(.plain)
+                    .font(.system(size: 11))
+                    .foregroundStyle(.secondary)
+                    .help("打开 www.appkaola.com")
                 Spacer()
                 Button("反馈支持") { model.openFeedback() }
                 Button("GitHub 仓库") { model.openRepository() }

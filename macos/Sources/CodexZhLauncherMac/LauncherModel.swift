@@ -11,7 +11,8 @@ struct LogEntry: Identifiable {
 
 @MainActor
 final class LauncherModel: ObservableObject {
-    static let version = "0.6.0"
+    static let version = "0.6.1"
+    static let sponsorURL = URL(string: "https://www.appkaola.com")!
 
     @Published private(set) var install: CodexInstall?
     @Published private(set) var runningCount = 0
@@ -185,6 +186,10 @@ final class LauncherModel: ObservableObject {
 
     func openFeedback() {
         NSWorkspace.shared.open(GitHubUpdateChecker.feedbackURL)
+    }
+
+    func openSponsor() {
+        NSWorkspace.shared.open(Self.sponsorURL)
     }
 
     private func launch(locale: String) {

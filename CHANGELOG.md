@@ -2,6 +2,13 @@
 
 本项目遵循 [Semantic Versioning](https://semver.org/)。
 
+## [0.6.1] - 2026-07-29
+
+### Added
+
+- Windows 与 macOS 顶部增加 Kao La API 赞助支持链接
+- 关于界面和中英文 README 增加赞助信息与关系声明
+
 ## [0.6.0] - 2026-07-29
 
 ### Added
