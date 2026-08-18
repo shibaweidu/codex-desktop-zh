@@ -2,6 +2,15 @@
 
 本项目遵循 [Semantic Versioning](https://semver.org/)。
 
+## [0.7.7] - 2026-08-19
+
+### Fixed
+
+- Windows 启动流程真正注册并执行 i18n bootstrap，不再只在自检中读取资源
+- 兼容新版 Codex Statsig `getLayer`，同时保留旧版 `getDynamicConfig`
+- 等待带真实 `electronBridge` 和应用根节点的渲染目标，避免把空外层页面当作 Codex 主界面
+- DevTools 支持 `Page.addScriptToEvaluateOnNewDocument`，并允许受 CSP 限制的安全求值
+
 ## [0.7.6] - 2026-07-30
 
 ### Fixed

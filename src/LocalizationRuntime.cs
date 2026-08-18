@@ -112,18 +112,70 @@ namespace CodexZhLauncher
 
         private static async Task<string> ApplyLocaleAsync(int port, string locale)
         {
-            var target = await DevToolsClient.WaitForTargetAsync(port, "page", TimeSpan.FromSeconds(25));
+            var target = await WaitForRendererTargetAsync(port, TimeSpan.FromSeconds(25));
             AppLog.Write("renderer.target type=" + target.Type + " title=" + target.Title);
+            if (locale.StartsWith("zh", StringComparison.OrdinalIgnoreCase))
+            {
+                var bootstrap = LocalizationScripts.BuildI18nBootstrap();
+                var identifier = await DevToolsClient.InstallNewDocumentScriptAsync(
+                    target.WebSocketDebuggerUrl,
+                    bootstrap);
+                var bootstrapResult = await DevToolsClient.EvaluateAsync(
+                    target.WebSocketDebuggerUrl,
+                    bootstrap + ";\n" + I18nBootstrapWaitScript,
+                    true);
+                if (!HasStatus(bootstrapResult, "ok"))
+                    throw new InvalidOperationException("Codex 官方中文资源引导未完成：" + bootstrapResult);
+
+                var setting = await DevToolsClient.EvaluateAsync(
+                    target.WebSocketDebuggerUrl,
+                    LocalizationScripts.BuildLocaleScript(locale),
+                    true);
+                return BuildChineseLocaleDetail(bootstrapResult, identifier, setting);
+            }
+
             return await DevToolsClient.EvaluateAsync(
                 target.WebSocketDebuggerUrl,
                 LocalizationScripts.BuildLocaleScript(locale),
                 true);
         }
 
+        private static string BuildChineseLocaleDetail(string bootstrap, string identifier, string setting)
+        {
+            var settingObject = ParseObject(setting);
+            object status;
+            var result = new Dictionary<string, object>
+            {
+                { "status", settingObject != null && settingObject.TryGetValue("status", out status) ? status : "partial" },
+                { "bootstrap", ParseObject(bootstrap) ?? (object)bootstrap },
+                { "newDocument", identifier ?? "unknown" },
+                { "setting", settingObject ?? (object)setting }
+            };
+            return Serializer.Serialize(result);
+        }
+
+        private const string I18nBootstrapWaitScript = @"(async function () {
+  var started = Date.now();
+  while (Date.now() - started < 10000) {
+    var state = window.__codexZhI18nState || {};
+    if ((state.patchedClients || 0) > 0 && (state.patchedConfigs || 0) > 0) break;
+    await new Promise(function (resolve) { window.setTimeout(resolve, 100); });
+  }
+  var finalState = window.__codexZhI18nState || {};
+  return JSON.stringify({
+    status: (finalState.patchedClients || 0) > 0 && (finalState.patchedConfigs || 0) > 0 ? 'ok' : 'partial',
+    configId: '72216192',
+    enable_i18n: true,
+    locale_source: 'SYSTEM',
+    patchedClients: finalState.patchedClients || 0,
+    patchedConfigs: finalState.patchedConfigs || 0
+  });
+})()";
+
         private static async Task<string> VerifyLocaleAsync(int port, string locale)
         {
             await Task.Delay(900);
-            var target = await DevToolsClient.WaitForTargetAsync(port, "page", TimeSpan.FromSeconds(12));
+            var target = await WaitForRendererTargetAsync(port, TimeSpan.FromSeconds(12));
             var encodedLocale = Serializer.Serialize(locale);
             var script = @"(function () {
   var requested = " + encodedLocale + @";
@@ -151,6 +203,98 @@ namespace CodexZhLauncher
             return await DevToolsClient.EvaluateAsync(target.WebSocketDebuggerUrl, script, false);
         }
 
+        private static async Task<DevToolsTarget> WaitForRendererTargetAsync(int port, TimeSpan timeout)
+        {
+            var deadline = DateTime.UtcNow.Add(timeout);
+            DevToolsTarget best = null;
+            var bestScore = Int32.MinValue;
+            Exception lastError = null;
+            while (DateTime.UtcNow < deadline)
+            {
+                try
+                {
+                    var targets = await DevToolsClient.ListTargetsAsync(port);
+                    foreach (var target in targets)
+                    {
+                        if (String.IsNullOrWhiteSpace(target.WebSocketDebuggerUrl) ||
+                            (target.Type != "page" && target.Type != "iframe" && target.Type != "webview"))
+                            continue;
+                        string probe;
+                        try
+                        {
+                            probe = await DevToolsClient.EvaluateAsync(
+                                target.WebSocketDebuggerUrl,
+                                RendererProbeScript,
+                                false);
+                        }
+                        catch (Exception ex)
+                        {
+                            lastError = ex;
+                            continue;
+                        }
+                        var values = ParseObject(probe);
+                        if (values == null || !ReadBoolean(values, "codexZhProbe")) continue;
+                        var hasBridge = ReadBoolean(values, "hasBridge");
+                        var hasRoot = ReadBoolean(values, "hasAppRoot");
+                        var textLength = ReadInt(values, "textLength");
+                        var score = (hasBridge ? 10000 : 0) + (hasRoot ? 1000 : 0) + textLength;
+                        if (score > bestScore)
+                        {
+                            best = target;
+                            bestScore = score;
+                        }
+                        if (hasBridge && (hasRoot || textLength >= 40))
+                        {
+                            AppLog.Write("renderer.ready type=" + target.Type + " url=" + target.Url +
+                                " bridge=" + hasBridge + " root=" + hasRoot + " text_length=" + textLength);
+                            return target;
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    lastError = ex;
+                }
+                await Task.Delay(300);
+            }
+            if (best != null && bestScore >= 10000)
+            {
+                AppLog.Write("renderer.fallback type=" + best.Type + " url=" + best.Url);
+                return best;
+            }
+            var suffix = lastError == null ? String.Empty : " 最后错误：" + lastError.Message;
+            throw new TimeoutException("未找到 Codex 实际渲染页面。" + suffix);
+        }
+
+        private const string RendererProbeScript = @"(function () {
+  var text = document.body ? document.body.innerText || '' : '';
+  return JSON.stringify({
+    codexZhProbe: true,
+    hasBridge: !!(window.electronBridge && typeof window.electronBridge.sendMessageFromView === 'function'),
+    hasAppRoot: !!document.querySelector('#root'),
+    textLength: text.length
+  });
+})()";
+
+        private static Dictionary<string, object> ParseObject(string json)
+        {
+            if (String.IsNullOrWhiteSpace(json)) return null;
+            try { return Serializer.Deserialize<Dictionary<string, object>>(json); }
+            catch { return null; }
+        }
+
+        private static bool ReadBoolean(Dictionary<string, object> values, string key)
+        {
+            object value;
+            return values != null && values.TryGetValue(key, out value) && value is bool && (bool)value;
+        }
+
+        private static int ReadInt(Dictionary<string, object> values, string key)
+        {
+            object value;
+            return values != null && values.TryGetValue(key, out value) ? Convert.ToInt32(value) : 0;
+        }
+
         private static async Task<string> ApplyMenuAsync(int port)
         {
             var target = await DevToolsClient.WaitForTargetAsync(port, "node", TimeSpan.FromSeconds(20));
@@ -168,13 +312,14 @@ namespace CodexZhLauncher
             {
                 var values = Serializer.Deserialize<Dictionary<string, object>>(json);
                 object status;
-                return values != null && values.TryGetValue("status", out status) &&
-                    String.Equals(Convert.ToString(status), expected, StringComparison.OrdinalIgnoreCase);
+                if (values != null && values.TryGetValue("status", out status) &&
+                    String.Equals(Convert.ToString(status), expected, StringComparison.OrdinalIgnoreCase))
+                    return true;
             }
             catch
             {
-                return false;
             }
+            return json.IndexOf("\"status\":\"" + expected + "\"", StringComparison.OrdinalIgnoreCase) >= 0;
         }
 
         private static string JoinDetails(string first, string second)

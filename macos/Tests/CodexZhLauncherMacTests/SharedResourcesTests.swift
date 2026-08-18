@@ -13,6 +13,7 @@ final class SharedResourcesTests: XCTestCase {
         XCTAssertTrue(bootstrap.contains("enable_i18n"))
         XCTAssertTrue(bootstrap.contains("locale_source"))
         XCTAssertTrue(bootstrap.contains("getDynamicConfig"))
+        XCTAssertTrue(bootstrap.contains("getLayer"))
         XCTAssertTrue(bootstrap.contains("status: state.patchedClients > 0 && state.patchedConfigs > 0 ? 'ok' : 'pending'"))
         XCTAssertFalse(bootstrap.contains("Object.defineProperty(globalThis, '__STATSIG__'"))
         XCTAssertTrue(locale.contains("localeOverride"))
@@ -30,7 +31,7 @@ final class SharedResourcesTests: XCTestCase {
         let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         defer { try? FileManager.default.removeItem(at: root) }
         try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
-        try "72216192 enable_i18n locale_source getDynamicConfig".write(
+        try "72216192 enable_i18n locale_source getDynamicConfig getLayer".write(
             to: root.appendingPathComponent("i18n-bootstrap.js"), atomically: true, encoding: .utf8
         )
         try "__LOCALE_JSON__".write(to: root.appendingPathComponent("locale-script.js"), atomically: true, encoding: .utf8)

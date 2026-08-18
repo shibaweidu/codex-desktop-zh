@@ -61,6 +61,7 @@ struct SharedResources {
               bootstrap.contains("enable_i18n"),
               bootstrap.contains("locale_source"),
               bootstrap.contains("getDynamicConfig"),
+              bootstrap.contains("getLayer"),
               menu.contains("Menu.setApplicationMenu"),
               menu.contains("隐藏其他应用"),
               menu.contains("前置全部窗口"),

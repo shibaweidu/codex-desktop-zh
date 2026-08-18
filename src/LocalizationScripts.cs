@@ -25,6 +25,11 @@ namespace CodexZhLauncher
             return script;
         }
 
+        public static string BuildI18nBootstrap()
+        {
+            return ReadResource(I18nBootstrapResource);
+        }
+
         public static string BuildMenuScript()
         {
             return BuildMenuScriptForPlatform("windows");
@@ -46,14 +51,15 @@ namespace CodexZhLauncher
 
         public static string SelfTest()
         {
-            var bootstrap = ReadResource(I18nBootstrapResource);
+            var bootstrap = BuildI18nBootstrap();
             var locale = BuildLocaleScript("zh-CN");
             var windowsMenu = BuildMenuScriptForPlatform("windows");
             var macMenu = BuildMenuScriptForPlatform("macos");
             if (bootstrap.IndexOf("72216192", StringComparison.Ordinal) < 0 ||
                 bootstrap.IndexOf("enable_i18n", StringComparison.Ordinal) < 0 ||
                 bootstrap.IndexOf("locale_source", StringComparison.Ordinal) < 0 ||
-                bootstrap.IndexOf("getDynamicConfig", StringComparison.Ordinal) < 0)
+                bootstrap.IndexOf("getDynamicConfig", StringComparison.Ordinal) < 0 ||
+                bootstrap.IndexOf("getLayer", StringComparison.Ordinal) < 0)
                 throw new InvalidOperationException("i18n 引导脚本缺少必要的动态配置补丁。 ");
             if (locale.IndexOf("localeOverride", StringComparison.Ordinal) < 0 ||
                 locale.IndexOf("vscode://codex/set-setting", StringComparison.Ordinal) < 0)

@@ -60,7 +60,47 @@ namespace CodexZhLauncher
             throw new TimeoutException("等待本地调试目标超时（127.0.0.1:" + port + "）。" + suffix);
         }
 
+        public static async Task<List<DevToolsTarget>> ListTargetsAsync(int port)
+        {
+            return await ReadTargetsAsync(port);
+        }
+
         public static async Task<string> EvaluateAsync(string webSocketUrl, string expression, bool awaitPromise)
+        {
+            var response = await SendCommandAsync(
+                webSocketUrl,
+                "Runtime.evaluate",
+                new Dictionary<string, object>
+                {
+                    { "expression", expression },
+                    { "awaitPromise", awaitPromise },
+                    { "returnByValue", true },
+                    { "userGesture", true },
+                    { "allowUnsafeEvalBlockedByCSP", true }
+                });
+            return ExtractEvaluationValue(response) ?? Serializer.Serialize(response);
+        }
+
+        public static async Task<string> InstallNewDocumentScriptAsync(string webSocketUrl, string script)
+        {
+            var response = await SendCommandAsync(
+                webSocketUrl,
+                "Page.addScriptToEvaluateOnNewDocument",
+                new Dictionary<string, object> { { "source", script } });
+            object resultObject;
+            var result = response != null && response.TryGetValue("result", out resultObject)
+                ? resultObject as Dictionary<string, object>
+                : null;
+            object identifier;
+            return result != null && result.TryGetValue("identifier", out identifier)
+                ? Convert.ToString(identifier)
+                : null;
+        }
+
+        private static async Task<Dictionary<string, object>> SendCommandAsync(
+            string webSocketUrl,
+            string method,
+            Dictionary<string, object> parameters)
         {
             using (var socket = new ClientWebSocket())
             using (var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(12)))
@@ -70,14 +110,8 @@ namespace CodexZhLauncher
 
                 var message = new Dictionary<string, object>();
                 message["id"] = 1;
-                message["method"] = "Runtime.evaluate";
-                message["params"] = new Dictionary<string, object>
-                {
-                    { "expression", expression },
-                    { "awaitPromise", awaitPromise },
-                    { "returnByValue", true },
-                    { "userGesture", true }
-                };
+                message["method"] = method;
+                message["params"] = parameters;
 
                 var payload = Encoding.UTF8.GetBytes(Serializer.Serialize(message));
                 await socket.SendAsync(
@@ -97,7 +131,7 @@ namespace CodexZhLauncher
                     if (response.TryGetValue("error", out error))
                         throw new InvalidOperationException("DevTools 返回错误：" + Serializer.Serialize(error));
 
-                    return ExtractEvaluationValue(response) ?? responseText;
+                    return response;
                 }
                 throw new InvalidOperationException("DevTools WebSocket 已断开。");
             }
@@ -180,4 +214,3 @@ namespace CodexZhLauncher
         }
     }
 }
-

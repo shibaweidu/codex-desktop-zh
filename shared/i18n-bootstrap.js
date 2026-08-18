@@ -42,16 +42,32 @@
   function patchClient(client) {
     if (!client || (typeof client !== 'object' && typeof client !== 'function')) return;
     if (client.__codexZhI18nClient) return;
-    var original = client.getDynamicConfig;
-    if (typeof original !== 'function') return;
+    var originalDynamic = client.getDynamicConfig;
+    var originalLayer = client.getLayer;
+    if (typeof originalDynamic !== 'function' && typeof originalLayer !== 'function') return;
+    var patched = false;
     try {
-      Object.defineProperty(client, 'getDynamicConfig', {
-        configurable: true,
-        value: function (key) {
-          var result = original.apply(this, arguments);
-          return String(key) === configId ? forceConfig(result) : result;
-        }
-      });
+      if (typeof originalDynamic === 'function') {
+        Object.defineProperty(client, 'getDynamicConfig', {
+          configurable: true,
+          value: function (key) {
+            var result = originalDynamic.apply(this, arguments);
+            return String(key) === configId ? forceConfig(result) : result;
+          }
+        });
+        patched = true;
+      }
+      if (typeof originalLayer === 'function') {
+        Object.defineProperty(client, 'getLayer', {
+          configurable: true,
+          value: function (key) {
+            var result = originalLayer.apply(this, arguments);
+            return String(key) === configId ? forceConfig(result) : result;
+          }
+        });
+        patched = true;
+      }
+      if (!patched) return;
       Object.defineProperty(client, '__codexZhI18nClient', { value: true, configurable: true });
       state.patchedClients += 1;
       state.lastPatchAt = Date.now();
