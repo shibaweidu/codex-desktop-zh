@@ -3,6 +3,12 @@ name: Publish release
 on:
   push:
     tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: Existing version tag to build and publish (for example v0.8.0)
+        required: true
+        type: string
 
 permissions:
   contents: write
@@ -13,6 +19,8 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.release_tag || github.ref }}
       - run: .\build.ps1 -Configuration Release
         shell: powershell
       - name: Test and verify version
@@ -23,7 +31,8 @@ jobs:
           if ($process.ExitCode -ne 0) { throw "Self-test failed: $($process.ExitCode)" }
           .\test-shutdown.ps1
           .\test-workspace.ps1
-          $expected = '${{ github.ref_name }}'.TrimStart('v') + '.0'
+          $tag = '${{ inputs.release_tag || github.ref_name }}'
+          $expected = $tag.TrimStart('v') + '.0'
           $actual = [System.Diagnostics.FileVersionInfo]::GetVersionInfo((Resolve-Path $exe)).FileVersion
           if ($actual -ne $expected) { throw "Tag does not match executable version $actual." }
       - uses: actions/upload-artifact@v4
@@ -45,18 +54,22 @@ jobs:
 
   macos:
     name: macOS ${{ matrix.arch }}
-    runs-on: macos-14
+    runs-on: ${{ matrix.runner }}
     timeout-minutes: 20
     strategy:
       fail-fast: false
       matrix:
         include:
           - arch: arm64
+            runner: macos-15
             asset: Codex-Zh-Launcher-macOS-arm64.zip
           - arch: x86_64
+            runner: macos-15-intel
             asset: Codex-Zh-Launcher-macOS-x64.zip
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.release_tag || github.ref }}
       - run: bash scripts/test-macos.sh
       - run: CODEX_ZH_SHARED_DIR="$PWD/shared" swift run --package-path macos CodexZhLauncherMac --self-test
       - name: Run CLI diagnostics on host
@@ -72,7 +85,8 @@ jobs:
         run: bash scripts/test-macos-updater.sh '${{ matrix.arch }}'
       - name: Verify tag version
         run: |
-          expected="${GITHUB_REF_NAME#v}"
+          release_tag='${{ inputs.release_tag || github.ref_name }}'
+          expected="${release_tag#v}"
           actual="$(unzip -p "dist/${{ matrix.asset }}" '*/Contents/Info.plist' | plutil -extract CFBundleShortVersionString raw -o - -)"
           test "$actual" = "$expected"
       - uses: actions/upload-artifact@v4
@@ -96,4 +110,6 @@ jobs:
       - name: Create GitHub release
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release create '${{ github.ref_name }}' release-assets/* --repo '${{ github.repository }}' --title "Codex 汉化增强工具 ${{ github.ref_name }}" --generate-notes --verify-tag
+        run: |
+          release_tag='${{ inputs.release_tag || github.ref_name }}'
+          gh release create "$release_tag" release-assets/* --repo '${{ github.repository }}' --title "Codex 汉化增强工具 $release_tag" --generate-notes --verify-tag

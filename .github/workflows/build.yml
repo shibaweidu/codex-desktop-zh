@@ -59,15 +59,17 @@ jobs:
 
   macos:
     name: macOS ${{ matrix.arch }}
-    runs-on: macos-14
+    runs-on: ${{ matrix.runner }}
     timeout-minutes: 20
     strategy:
       fail-fast: false
       matrix:
         include:
           - arch: arm64
+            runner: macos-15
             asset: Codex-Zh-Launcher-macOS-arm64.zip
           - arch: x86_64
+            runner: macos-15-intel
             asset: Codex-Zh-Launcher-macOS-x64.zip
     steps:
       - uses: actions/checkout@v4
