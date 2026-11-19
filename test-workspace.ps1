@@ -22,4 +22,5 @@ $tokens=$null;$parseErrors=$null
 [System.Management.Automation.Language.Parser]::ParseFile($scriptPath,[ref]$tokens,[ref]$parseErrors) | Out-Null
 if($parseErrors.Count -gt 0) { throw ('Generated AppX install script has syntax errors: '+(($parseErrors | ForEach-Object { $_.Message }) -join '; ')) }
 Write-Host 'PASS generated_windows_install_script_powershell_syntax'
+& (Join-Path $root 'tests\MsixVerification.Tests.ps1') -TestExecutable "$out\WorkspaceTests.exe"
 Remove-Item Env:\CODEX_ZH_TEST_SCRIPT -ErrorAction SilentlyContinue

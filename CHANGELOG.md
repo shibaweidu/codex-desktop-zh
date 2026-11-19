@@ -2,6 +2,14 @@
 
 本项目遵循 [Semantic Versioning](https://semver.org/)。
 
+## [0.8.1] - 2026-11-20
+
+### Fixed
+
+- 修复 Windows Codex 更新把有效的 Store 签名误判为无效：校验 Windows 信任状态与准确的 Codex 发布者 ID，不再要求签名证书主体包含 Microsoft。
+- 下载完成和系统部署前共用同一套大小、SHA-256、签名、发布者及 MSIX 身份校验；日志保留具体失败原因。
+- 新增 13 项 MSIX 校验回归检查；在 Windows PowerShell 5.1 中验证现有真实下载包通过，仅校验、不安装或关闭真实 Codex。
+
 ## [0.8.0] - 2026-11-19
 
 ### Added

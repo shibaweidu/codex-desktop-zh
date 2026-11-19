@@ -4,7 +4,7 @@ English | [简体中文](README.md)
 
 ![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS-5B8DEF)
 ![Architecture](https://img.shields.io/badge/architecture-x64%20%7C%20arm64-6D7280)
-![Version](https://img.shields.io/badge/version-v0.8.0-C4B5FD)
+![Version](https://img.shields.io/badge/version-v0.8.1-C4B5FD)
 ![License](https://img.shields.io/badge/license-MIT-31B77A)
 
 **Codex Desktop Chinese Localization Enhancer** is a Windows and macOS launcher for enabling the Chinese UI and translating native Electron menus in Codex Desktop. It supports Microsoft Store, portable, and macOS App Bundle installations, verified process shutdown, and automatic restart in Chinese mode.
@@ -12,6 +12,8 @@ English | [简体中文](README.md)
 The tool does not unpack or replace `app.asar`, modify the Microsoft Store installation, or read Codex accounts, tokens, and project files.
 
 ## v0.8 development preview
+
+Version 0.8.1 fixes Windows rejecting valid Codex Store signatures because the signer subject does not contain Microsoft. It checks the trusted signature, exact publisher identity and SHA-256 again before installation.
 
 Version 0.8.0 adds a native WPF / SwiftUI five-page workspace for Overview, Codex updates, Localization, Appearance, and Diagnostics. Windows downloads and verifies an update before user confirmation; macOS additionally requires the release workflow to pass both architecture builds and tests. Check GitHub Releases and CI for publication status.
 

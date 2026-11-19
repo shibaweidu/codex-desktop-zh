@@ -46,7 +46,7 @@ enum Program {
             let processService = DarwinProcessService()
             let install = discovery.detect()
             if command == "--diagnostics" {
-                print("Codex Localization Enhancer 0.8.0")
+                print("Codex Localization Enhancer 0.8.1")
                 print("os=\(ProcessInfo.processInfo.operatingSystemVersionString)")
                 #if arch(arm64)
                 print("architecture=arm64")

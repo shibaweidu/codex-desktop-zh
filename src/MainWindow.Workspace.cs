@@ -132,7 +132,7 @@ namespace CodexZhLauncher
             var page=Page("Codex 更新","仅通过 Wangnov 社区镜像检查并安装更新。");
             downloadOptions=new StackPanel();
             downloadStatus=Label("进入此页后自动检查本机版本与社区镜像。",15,true);downloadOptions.Children.Add(downloadStatus);
-            var detail=Label("自动识别 Windows 架构与已安装版本。安装前校验安装包大小、SHA-256 和 Microsoft 签名。",12,false,true);detail.Margin=new Thickness(0,6,0,14);downloadOptions.Children.Add(detail);
+            var detail=Label("自动识别 Windows 架构与已安装版本。安装前校验大小、SHA-256、有效签名及 Codex 发布者身份。",12,false,true);detail.Margin=new Thickness(0,6,0,14);downloadOptions.Children.Add(detail);
             updateCodexButton=ActionButton("检查并更新 Codex",async delegate {await CheckAndUpdateCodexAsync(false);});updateCodexButton.MinWidth=230;downloadOptions.Children.Add(updateCodexButton);
             page.Children.Add(Card(downloadOptions));
             var result=new StackPanel();cancelDownload=ActionButton("取消下载",delegate {if(downloadCancellation!=null) downloadCancellation.Cancel();});cancelDownload.IsEnabled=false;result.Children.Add(cancelDownload);
@@ -209,10 +209,13 @@ namespace CodexZhLauncher
                 var downloadProgress=new Progress<int>(n=>{if(IsLoaded) downloadStatus.Text="正在下载 "+plan.Version+"（"+n+"%）";});
                 downloadedFile=await CodexDownloads.DownloadAsync(plan,Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),"Downloads","Codex"),downloadProgress,token);
                 downloadedPlan=plan;
-                using(var verify=Process.Start(new ProcessStartInfo{FileName="powershell.exe",Arguments="-NoProfile -NonInteractive -Command "+ProcessRunner.QuoteArgument("$s=Get-AuthenticodeSignature -LiteralPath "+ProcessRunner.PowerShellLiteral(downloadedFile)+"; if($s.Status -ne 'Valid' -or $s.SignerCertificate.Subject -notmatch 'Microsoft') { exit 2 }") ,UseShellExecute=false,CreateNoWindow=true}))
-                {await Task.Run(()=>verify.WaitForExit());if(verify.ExitCode!=0)throw new InvalidDataException("Microsoft Authenticode 签名无效，已拒绝安装。");}
-                downloadStatus.Text="下载与 SHA-256 校验通过。Windows 将验证 Microsoft 包签名。\n"+(CodexDiscovery.CountRunningCodexProcesses(local??currentInstall)>0?"Codex 正在运行；请先退出，再点“重试系统安装”。":"准备请求系统安装授权…");
-                AppendLog("Codex 安装包 SHA-256 已验证；MSIX 身份锁定 OpenAI.Codex，签名由 Windows AppX 部署服务验证。",Accent);
+                var verificationScript="[Console]::OutputEncoding=[Text.Encoding]::UTF8; "+CodexDownloads.BuildWindowsVerificationScript(plan,downloadedFile);
+                var verification=await ProcessRunner.RunAsync("powershell.exe","-NoProfile -NonInteractive -EncodedCommand "+Convert.ToBase64String(System.Text.Encoding.Unicode.GetBytes(verificationScript)));
+                if(verification.ExitCode!=0)throw new InvalidDataException("MSIX 校验失败，已拒绝安装："+verification.Error.Trim());
+                token.ThrowIfCancellationRequested();
+                AppendLog(verification.Output.Trim(),TextSecondary);
+                downloadStatus.Text="大小、SHA-256、签名及发布者身份校验通过。\n"+(CodexDiscovery.CountRunningCodexProcesses(local??currentInstall)>0?"Codex 正在运行；请先退出，再点“重试系统安装”。":"准备请求系统安装授权…");
+                AppendLog("MSIX 身份锁定 OpenAI.Codex；部署前将重新校验文件，Windows AppX 部署服务继续验证包签名。",Accent);
                 if(CodexDiscovery.CountRunningCodexProcesses(local??currentInstall)>0){openDownload.IsEnabled=true;return;}
                 installWhenReady=true;
             }

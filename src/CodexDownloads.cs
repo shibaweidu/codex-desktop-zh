@@ -19,6 +19,7 @@ namespace CodexZhLauncher
 
     internal static class CodexDownloads
     {
+        internal const string WindowsPublisher = "CN=50BDFD77-8903-4850-9FFE-6E8522F64D5B";
         public const string ManifestUrl = "https://codexapp.agentsmirror.com/latest/manifest";
         public static async Task<CodexDownloadPlan> ResolveAsync(string platform, string architecture, CancellationToken token)
         {
@@ -114,11 +115,33 @@ namespace CodexZhLauncher
             using (var input = new FileStream(file, FileMode.Open, FileAccess.Read, FileShare.Read, 81920, true))
                 await CopyVerifiedAsync(input, Stream.Null, plan.Length, plan.Sha256, null, token);
         }
+        internal static string BuildWindowsVerificationScript(CodexDownloadPlan plan, string file)
+        {
+            Version version;
+            if(plan==null||plan.Platform!="windows"||plan.PackageFamilyName!="OpenAI.Codex_2p2nqsd0c76g0"||
+                (plan.Architecture!="arm64"&&plan.Architecture!="x64")||!TryNumericVersion(plan.PackageVersion,out version)||
+                plan.Length<=0||!IsHash(plan.Sha256)||String.IsNullOrWhiteSpace(file))
+                throw new InvalidDataException("缺少有效的 Windows 包身份或校验信息。");
+            // Store certificates identify the app publisher, not Microsoft, in Subject.
+            // Require Windows trust validation AND the exact Codex publisher identity.
+            return "$ErrorActionPreference='Stop'; $file="+PowerShellLiteral(file)+"; "+
+                "if((Get-Item -LiteralPath $file).Length -ne "+plan.Length.ToString(System.Globalization.CultureInfo.InvariantCulture)+"){throw 'MSIX size mismatch'}; "+
+                "if((Get-FileHash -LiteralPath $file -Algorithm SHA256).Hash -ne "+PowerShellLiteral(plan.Sha256)+"){throw 'MSIX SHA-256 mismatch'}; "+
+                "$s=Get-AuthenticodeSignature -LiteralPath $file; "+
+                "if($s.Status -ne 'Valid'){throw ('MSIX signature invalid: status='+$s.Status+'; '+$s.StatusMessage)}; "+
+                "if($null -eq $s.SignerCertificate -or $s.SignerCertificate.Subject -cne "+PowerShellLiteral(WindowsPublisher)+"){throw 'MSIX signer publisher mismatch'}; "+
+                "Add-Type -AssemblyName System.IO.Compression.FileSystem; $z=[IO.Compression.ZipFile]::OpenRead($file); "+
+                "try {$e=$z.GetEntry('AppxManifest.xml'); if($null -eq $e){throw 'Missing MSIX manifest'}; "+
+                "$r=New-Object IO.StreamReader($e.Open()); try{[xml]$x=$r.ReadToEnd()}finally{$r.Dispose()}; "+
+                "$i=$x.Package.Identity; if($i.Name -cne 'OpenAI.Codex' -or $i.Publisher -cne "+PowerShellLiteral(WindowsPublisher)+
+                " -or $i.Version -ne "+PowerShellLiteral(plan.PackageVersion)+" -or $i.ProcessorArchitecture -ne "+PowerShellLiteral(plan.Architecture)+
+                "){throw 'MSIX identity mismatch'} } finally {$z.Dispose()}; "+
+                "Write-Output ('MSIX verified; signature='+$s.Status+'; publisher='+$s.SignerCertificate.Subject+'; issuer='+$s.SignerCertificate.Issuer); ";
+        }
         internal static string BuildWindowsInstallScript(CodexDownloadPlan plan, string file)
         {
-            if(plan==null||plan.Platform!="windows"||String.IsNullOrWhiteSpace(plan.PackageFamilyName))throw new InvalidDataException("缺少有效的 Windows 包身份。");
-            var arch=plan.Architecture=="arm64"?"arm64":"x64";
-            return "$ErrorActionPreference='Stop'; Add-Type -AssemblyName System.IO.Compression.FileSystem; $z=[IO.Compression.ZipFile]::OpenRead("+PowerShellLiteral(file)+"); try {$e=$z.GetEntry('AppxManifest.xml'); if($null -eq $e){throw 'Missing MSIX manifest'}; $r=New-Object IO.StreamReader($e.Open()); try{[xml]$x=$r.ReadToEnd()}finally{$r.Dispose()}; $i=$x.Package.Identity; if($i.Name -ne 'OpenAI.Codex' -or $i.Publisher -ne 'CN=50BDFD77-8903-4850-9FFE-6E8522F64D5B' -or $i.Version -ne "+PowerShellLiteral(plan.PackageVersion)+" -or $i.ProcessorArchitecture -ne '"+arch+"'){throw 'MSIX identity mismatch'} } finally {$z.Dispose()}; $cur=Get-AppxPackage -Name 'OpenAI.Codex' | Select-Object -First 1; if($cur -and [version]$cur.Version -ge [version]"+PowerShellLiteral(plan.PackageVersion)+"){throw 'Codex is already current or newer'}; Add-AppxPackage -Path "+PowerShellLiteral(file)+" -ForceUpdateFromAnyVersion; $p=Get-AppxPackage -Name 'OpenAI.Codex' | Where-Object {$_.Version.ToString() -eq "+PowerShellLiteral(plan.PackageVersion)+" -and $_.PackageFamilyName -eq "+PowerShellLiteral(plan.PackageFamilyName)+"}; if($null -eq $p){throw 'Installed package identity/version mismatch'}";
+            return BuildWindowsVerificationScript(plan,file)+
+                "$cur=Get-AppxPackage -Name 'OpenAI.Codex' | Select-Object -First 1; if($cur -and [version]$cur.Version -ge [version]"+PowerShellLiteral(plan.PackageVersion)+"){throw 'Codex is already current or newer'}; Add-AppxPackage -Path "+PowerShellLiteral(file)+" -ForceUpdateFromAnyVersion; $p=Get-AppxPackage -Name 'OpenAI.Codex' | Where-Object {$_.Version.ToString() -eq "+PowerShellLiteral(plan.PackageVersion)+" -and $_.PackageFamilyName -eq "+PowerShellLiteral(plan.PackageFamilyName)+"}; if($null -eq $p){throw 'Installed package identity/version mismatch'}";
         }
         private static string PowerShellLiteral(string value){return "'"+(value??String.Empty).Replace("'","''")+"'";}
         public static async Task<string> DownloadAsync(CodexDownloadPlan plan, string directory, IProgress<int> progress, CancellationToken token)
