@@ -1,0 +1,332 @@
+[
+  {
+    "palette": "midnight",
+    "passed": true,
+    "results": [
+      {
+        "baseBackground": "#121c29",
+        "contrast": 13.94,
+        "foreground": "#e1eafd",
+        "passed": true,
+        "sample": "正文 / 内容背景",
+        "whiteOverlay": 0.008
+      },
+      {
+        "baseBackground": "#192538",
+        "contrast": 6.16,
+        "foreground": "#a7b9d1",
+        "passed": true,
+        "sample": "辅助文字 / 侧栏顶光",
+        "whiteOverlay": 0.075
+      },
+      {
+        "baseBackground": "#1c2a3c",
+        "contrast": 5.78,
+        "foreground": "#a7b9d1",
+        "passed": true,
+        "sample": "辅助文字 / 面板顶光",
+        "whiteOverlay": 0.075
+      },
+      {
+        "baseBackground": "#283d5b",
+        "contrast": 5.25,
+        "foreground": "#9bbdff",
+        "passed": true,
+        "sample": "选中导航 / 淡紫材质",
+        "whiteOverlay": 0.035
+      },
+      {
+        "baseBackground": "#26374d",
+        "contrast": 7.96,
+        "foreground": "#e1eafd",
+        "passed": true,
+        "sample": "普通按钮 / 顶光",
+        "whiteOverlay": 0.075
+      },
+      {
+        "baseBackground": "#9bbdff",
+        "contrast": 8.82,
+        "foreground": "#211938",
+        "passed": true,
+        "sample": "主按钮 / 强调色",
+        "whiteOverlay": 0
+      }
+    ],
+    "scope": "Token/material samples only; actual gradient text still requires visual review"
+  },
+  {
+    "palette": "graphite",
+    "passed": true,
+    "results": [
+      {
+        "baseBackground": "#171717",
+        "contrast": 15.18,
+        "foreground": "#eeeeee",
+        "passed": true,
+        "sample": "正文 / 内容背景",
+        "whiteOverlay": 0.008
+      },
+      {
+        "baseBackground": "#202020",
+        "contrast": 6.3,
+        "foreground": "#b4b4b4",
+        "passed": true,
+        "sample": "辅助文字 / 侧栏顶光",
+        "whiteOverlay": 0.075
+      },
+      {
+        "baseBackground": "#262626",
+        "contrast": 5.8,
+        "foreground": "#b4b4b4",
+        "passed": true,
+        "sample": "辅助文字 / 面板顶光",
+        "whiteOverlay": 0.075
+      },
+      {
+        "baseBackground": "#353535",
+        "contrast": 6.65,
+        "foreground": "#c9c9c9",
+        "passed": true,
+        "sample": "选中导航 / 淡紫材质",
+        "whiteOverlay": 0.035
+      },
+      {
+        "baseBackground": "#303030",
+        "contrast": 9,
+        "foreground": "#eeeeee",
+        "passed": true,
+        "sample": "普通按钮 / 顶光",
+        "whiteOverlay": 0.075
+      },
+      {
+        "baseBackground": "#c9c9c9",
+        "contrast": 9.84,
+        "foreground": "#202020",
+        "passed": true,
+        "sample": "主按钮 / 强调色",
+        "whiteOverlay": 0
+      }
+    ],
+    "scope": "Token/material samples only; actual gradient text still requires visual review"
+  },
+  {
+    "palette": "forest",
+    "passed": true,
+    "results": [
+      {
+        "baseBackground": "#121c18",
+        "contrast": 14.37,
+        "foreground": "#e3eee7",
+        "passed": true,
+        "sample": "正文 / 内容背景",
+        "whiteOverlay": 0.008
+      },
+      {
+        "baseBackground": "#1a2620",
+        "contrast": 6.41,
+        "foreground": "#a9bfb0",
+        "passed": true,
+        "sample": "辅助文字 / 侧栏顶光",
+        "whiteOverlay": 0.075
+      },
+      {
+        "baseBackground": "#1e2d26",
+        "contrast": 5.86,
+        "foreground": "#a9bfb0",
+        "passed": true,
+        "sample": "辅助文字 / 面板顶光",
+        "whiteOverlay": 0.075
+      },
+      {
+        "baseBackground": "#2e4537",
+        "contrast": 5.13,
+        "foreground": "#a2c9ae",
+        "passed": true,
+        "sample": "选中导航 / 淡紫材质",
+        "whiteOverlay": 0.035
+      },
+      {
+        "baseBackground": "#293c32",
+        "contrast": 7.85,
+        "foreground": "#e3eee7",
+        "passed": true,
+        "sample": "普通按钮 / 顶光",
+        "whiteOverlay": 0.075
+      },
+      {
+        "baseBackground": "#a2c9ae",
+        "contrast": 9.12,
+        "foreground": "#211938",
+        "passed": true,
+        "sample": "主按钮 / 强调色",
+        "whiteOverlay": 0
+      }
+    ],
+    "scope": "Token/material samples only; actual gradient text still requires visual review"
+  },
+  {
+    "palette": "paper",
+    "passed": true,
+    "results": [
+      {
+        "baseBackground": "#f3f2ef",
+        "contrast": 12.09,
+        "foreground": "#302d35",
+        "passed": true,
+        "sample": "正文 / 内容背景",
+        "whiteOverlay": 0.008
+      },
+      {
+        "baseBackground": "#ebe9e5",
+        "contrast": 5.24,
+        "foreground": "#655d70",
+        "passed": true,
+        "sample": "辅助文字 / 侧栏顶光",
+        "whiteOverlay": 0.075
+      },
+      {
+        "baseBackground": "#ffffff",
+        "contrast": 6.26,
+        "foreground": "#655d70",
+        "passed": true,
+        "sample": "辅助文字 / 面板顶光",
+        "whiteOverlay": 0.45
+      },
+      {
+        "baseBackground": "#e9e2f1",
+        "contrast": 5.19,
+        "foreground": "#6b557f",
+        "passed": true,
+        "sample": "选中导航 / 淡紫材质",
+        "whiteOverlay": 0.035
+      },
+      {
+        "baseBackground": "#e9e5ee",
+        "contrast": 12.03,
+        "foreground": "#302d35",
+        "passed": true,
+        "sample": "普通按钮 / 顶光",
+        "whiteOverlay": 0.45
+      },
+      {
+        "baseBackground": "#6b557f",
+        "contrast": 6.5,
+        "foreground": "#ffffff",
+        "passed": true,
+        "sample": "主按钮 / 强调色",
+        "whiteOverlay": 0
+      }
+    ],
+    "scope": "Token/material samples only; actual gradient text still requires visual review"
+  },
+  {
+    "palette": "contrast",
+    "passed": true,
+    "results": [
+      {
+        "baseBackground": "#080809",
+        "contrast": 19.79,
+        "foreground": "#ffffff",
+        "passed": true,
+        "sample": "正文 / 内容背景",
+        "whiteOverlay": 0.008
+      },
+      {
+        "baseBackground": "#111114",
+        "contrast": 9.91,
+        "foreground": "#d1cbd9",
+        "passed": true,
+        "sample": "辅助文字 / 侧栏顶光",
+        "whiteOverlay": 0.075
+      },
+      {
+        "baseBackground": "#17171b",
+        "contrast": 9.22,
+        "foreground": "#d1cbd9",
+        "passed": true,
+        "sample": "辅助文字 / 面板顶光",
+        "whiteOverlay": 0.075
+      },
+      {
+        "baseBackground": "#352d43",
+        "contrast": 8.11,
+        "foreground": "#dfcfff",
+        "passed": true,
+        "sample": "选中导航 / 淡紫材质",
+        "whiteOverlay": 0.035
+      },
+      {
+        "baseBackground": "#25242a",
+        "contrast": 12.26,
+        "foreground": "#ffffff",
+        "passed": true,
+        "sample": "普通按钮 / 顶光",
+        "whiteOverlay": 0.075
+      },
+      {
+        "baseBackground": "#dfcfff",
+        "contrast": 11.51,
+        "foreground": "#211938",
+        "passed": true,
+        "sample": "主按钮 / 强调色",
+        "whiteOverlay": 0
+      }
+    ],
+    "scope": "Token/material samples only; actual gradient text still requires visual review"
+  },
+  {
+    "palette": "violet",
+    "passed": true,
+    "results": [
+      {
+        "baseBackground": "#1c1d23",
+        "contrast": 15.04,
+        "foreground": "#f5f4f8",
+        "passed": true,
+        "sample": "正文 / 内容背景",
+        "whiteOverlay": 0.008
+      },
+      {
+        "baseBackground": "#27272f",
+        "contrast": 5.96,
+        "foreground": "#b9b7c5",
+        "passed": true,
+        "sample": "辅助文字 / 侧栏顶光",
+        "whiteOverlay": 0.075
+      },
+      {
+        "baseBackground": "#2b2c34",
+        "contrast": 5.57,
+        "foreground": "#b9b7c5",
+        "passed": true,
+        "sample": "辅助文字 / 面板顶光",
+        "whiteOverlay": 0.075
+      },
+      {
+        "baseBackground": "#3c354e",
+        "contrast": 5.65,
+        "foreground": "#c4b5fd",
+        "passed": true,
+        "sample": "选中导航 / 淡紫材质",
+        "whiteOverlay": 0.035
+      },
+      {
+        "baseBackground": "#373842",
+        "contrast": 8.43,
+        "foreground": "#f5f4f8",
+        "passed": true,
+        "sample": "普通按钮 / 顶光",
+        "whiteOverlay": 0.075
+      },
+      {
+        "baseBackground": "#c4b5fd",
+        "contrast": 9.02,
+        "foreground": "#211938",
+        "passed": true,
+        "sample": "主按钮 / 强调色",
+        "whiteOverlay": 0
+      }
+    ],
+    "scope": "Token/material samples only; actual gradient text still requires visual review"
+  }
+]

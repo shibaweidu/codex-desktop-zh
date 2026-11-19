@@ -14,6 +14,9 @@ enum Program {
         if arguments.first == "--apply-update-macos-test" {
             Darwin.exit(MacUpdateInstaller.apply(arguments: arguments, restart: false))
         }
+        if arguments.first == "--apply-codex-update-macos" {
+            Darwin.exit(CodexAppUpdateInstaller.apply(arguments: arguments))
+        }
         if let command = arguments.first {
             Task {
                 let exitCode = await runCLI(command: command)
@@ -43,7 +46,7 @@ enum Program {
             let processService = DarwinProcessService()
             let install = discovery.detect()
             if command == "--diagnostics" {
-                print("Codex Localization Enhancer 0.7.7")
+                print("Codex Localization Enhancer 0.8.0")
                 print("os=\(ProcessInfo.processInfo.operatingSystemVersionString)")
                 #if arch(arm64)
                 print("architecture=arm64")
@@ -103,19 +106,20 @@ enum Program {
 }
 
 @MainActor
-final class ApplicationDelegate: NSObject, NSApplicationDelegate {
+final class ApplicationDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     private var window: NSWindow?
     private let model = LauncherModel()
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         let window = NSWindow(
-            contentRect: NSRect(x: 0, y: 0, width: 820, height: 620),
+            contentRect: NSRect(x: 0, y: 0, width: 1140, height: 800),
             styleMask: [.titled, .closable, .miniaturizable, .resizable],
             backing: .buffered,
             defer: false
         )
         window.title = "Codex 汉化增强工具"
-        window.minSize = NSSize(width: 720, height: 560)
+        window.minSize = NSSize(width: 960, height: 680)
+        window.delegate = self
         window.center()
         window.appearance = NSAppearance(named: .darkAqua)
         window.contentViewController = NSHostingController(rootView: LauncherView(model: model))
@@ -126,6 +130,40 @@ final class ApplicationDelegate: NSObject, NSApplicationDelegate {
     }
 
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool { true }
+
+    func windowShouldClose(_ sender: NSWindow) -> Bool {
+        if model.downloads.busy {
+            model.downloads.cancel()
+            Task {
+                while model.downloads.busy { try? await Task.sleep(nanoseconds: 100_000_000) }
+                sender.performClose(nil)
+            }
+            return false
+        }
+        return canClose()
+    }
+
+    func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
+        if model.allowsUpdateExit { return .terminateNow }
+        if model.downloads.busy {
+            model.downloads.cancel()
+            Task {
+                while model.downloads.busy { try? await Task.sleep(nanoseconds: 100_000_000) }
+                sender.reply(toApplicationShouldTerminate: !model.working)
+            }
+            return .terminateLater
+        }
+        return canClose() ? .terminateNow : .terminateCancel
+    }
+
+    private func canClose() -> Bool {
+        guard model.working else { return true }
+        let alert = NSAlert()
+        alert.messageText = "当前操作正在执行"
+        alert.informativeText = "请等待汉化、关闭重启或更新操作完成后再退出。"
+        alert.runModal()
+        return false
+    }
 
     private func buildMenus() {
         let main = NSMenu()

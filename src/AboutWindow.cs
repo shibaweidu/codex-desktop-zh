@@ -30,12 +30,12 @@ namespace CodexZhLauncher
         private static readonly Brush TextSecondary = Brush("#929AA3");
         private static readonly Brush Accent = Brush("#C4B5FD");
 
-        public AboutWindow(Window owner)
+        public AboutWindow(Window owner, WorkspaceSettings preferences = null)
         {
             Owner = owner;
             Title = "关于 Codex 汉化增强工具";
             Width = 500;
-            Height = 390;
+            Height = 435;
             ResizeMode = ResizeMode.NoResize;
             WindowStartupLocation = WindowStartupLocation.CenterOwner;
             Background = CanvasColor;
@@ -87,7 +87,20 @@ namespace CodexZhLauncher
                 Margin = new Thickness(0, 22, 0, 20)
             };
             Grid.SetRow(description, 1);
-            root.Children.Add(description);
+            var settings = new StackPanel();
+            Grid.SetRow(settings, 1);
+            settings.Children.Add(description);
+            if(preferences != null)
+            {
+                var autoCheck = new CheckBox { Content="启动时检查工具更新", IsChecked=preferences.AutoCheck, Foreground=TextPrimary, Margin=new Thickness(0,0,0,18) };
+                autoCheck.Click += delegate {
+                    var old=preferences.AutoCheck; preferences.AutoCheck=autoCheck.IsChecked==true;
+                    try {preferences.Save();}
+                    catch(Exception ex) {preferences.AutoCheck=old;autoCheck.IsChecked=old;MessageBox.Show(this,"设置未保存："+ex.Message,"保存失败");}
+                };
+                settings.Children.Add(autoCheck);
+            }
+            root.Children.Add(settings);
 
             var updateGrid = new Grid
             {
@@ -125,7 +138,7 @@ namespace CodexZhLauncher
             var footer = new Grid();
             footer.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
             footer.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-            var sponsor = BuildTextLink("Kao La API 赞助支持", AppInfo.SponsorUrl);
+            var sponsor = BuildTextLink("KAO LA API · 一站式顶级大模型调用平台", AppInfo.SponsorUrl);
             sponsor.VerticalAlignment = VerticalAlignment.Center;
             footer.Children.Add(sponsor);
 
@@ -188,43 +201,11 @@ namespace CodexZhLauncher
 
         private async System.Threading.Tasks.Task InstallUpdateAsync()
         {
-            var choice = MessageBox.Show(
-                this,
-                "将下载 v" + latestResult.LatestVersion + "，退出当前工具后覆盖并自动重启。\n\n是否继续？",
-                "安装更新",
-                MessageBoxButton.YesNo,
-                MessageBoxImage.Information);
-            if (choice != MessageBoxResult.Yes) return;
-
-            checkButton.IsEnabled = false;
-            downloadButton.IsEnabled = false;
-            try
-            {
-                var started = await UpdateInstaller.PrepareAndLaunchAsync(latestResult, message =>
-                {
-                    updateStatus.Text = message;
-                    updateStatus.Foreground = Accent;
-                });
-                if (started) Application.Current.Shutdown();
-            }
-            catch (Exception ex)
-            {
-                updateStatus.Text = "自动更新失败：" + ex.Message;
-                updateStatus.Foreground = TextSecondary;
-                AppLog.Write("update.prepare.failed " + ex);
-                var fallback = MessageBox.Show(
-                    this,
-                    "自动更新失败：" + ex.Message + "\n\n是否打开下载页面手动更新？",
-                    "更新未完成",
-                    MessageBoxButton.YesNo,
-                    MessageBoxImage.Warning);
-                if (fallback == MessageBoxResult.Yes) AppInfo.OpenUrl(latestResult.ReleaseUrl);
-            }
-            finally
-            {
-                checkButton.IsEnabled = true;
-                downloadButton.IsEnabled = true;
-            }
+            var main=Owner as MainWindow;
+            if(main==null || latestResult==null)return;
+            var update=latestResult;
+            Close();
+            await main.InstallUpdateAsync(update);
         }
 
         private static Button BuildButton(string text, bool accent)

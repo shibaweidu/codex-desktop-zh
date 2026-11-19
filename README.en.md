@@ -4,12 +4,20 @@ English | [简体中文](README.md)
 
 ![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS-5B8DEF)
 ![Architecture](https://img.shields.io/badge/architecture-x64%20%7C%20arm64-6D7280)
-![Version](https://img.shields.io/badge/version-v0.7.7-C4B5FD)
+![Version](https://img.shields.io/badge/version-v0.8.0-C4B5FD)
 ![License](https://img.shields.io/badge/license-MIT-31B77A)
 
 **Codex Desktop Chinese Localization Enhancer** is a Windows and macOS launcher for enabling the Chinese UI and translating native Electron menus in Codex Desktop. It supports Microsoft Store, portable, and macOS App Bundle installations, verified process shutdown, and automatic restart in Chinese mode.
 
 The tool does not unpack or replace `app.asar`, modify the Microsoft Store installation, or read Codex accounts, tokens, and project files.
+
+## v0.8 development preview
+
+Version 0.8.0 adds a native WPF / SwiftUI five-page workspace for Overview, Codex updates, Localization, Appearance, and Diagnostics. Windows downloads and verifies an update before user confirmation; macOS additionally requires the release workflow to pass both architecture builds and tests. Check GitHub Releases and CI for publication status.
+
+Codex client updates use the Wangnov community mirror as the sole manifest and package source on both platforms. The launcher detects the local version and CPU architecture, skips downloads when current, and automatically downloads and verifies an available update. Windows compares MSIX package versions; macOS compares the app version and then the build number when the app version is unchanged. Windows confirms before AppX/UAC installation; macOS confirms before validating Apple signing, Team ID and architecture, then replacing and restarting. Updating Codex under the system Applications directory may request macOS administrator authorization; cancellation or verification failure leaves the existing app in place. A running Codex process is never force-killed, and portable Windows builds are not overwritten automatically. Six project-owned runtime color presets are reversible and scoped to a launcher-created, process-verified session. They do not change application files, native settings, menus, or syntax colors; a full page refresh can remove the runtime style.
+
+Windows isolated service and browser-fixture tests have run locally. The new macOS implementation and tests still require a Mac/CI build and Apple Silicon/Intel manual acceptance. See [native verification](docs/NATIVE-v0.8-VERIFICATION.md).
 
 ## Features
 
@@ -22,10 +30,11 @@ The tool does not unpack or replace `app.asar`, modify the Microsoft Store insta
 - Reports menu labels that need compatibility updates
 - Safely closes a running Codex instance before localization and restart
 - Revalidates the PID, executable path, and start time before termination
-- Provides compact dark WPF and SwiftUI interfaces with local diagnostic logs
-- Checks GitHub Releases at startup and only prompts before opening a new download
+- Provides native dark five-page WPF and SwiftUI interfaces with local diagnostic logs
+- Optionally checks GitHub Releases at startup; confirmation starts verified download, replacement, and restart
 - Provides an About view with version, update, support, and repository actions
-- Does not require administrator privileges or patch official app files
+- The launcher requires no administrator privileges for normal use; updating Codex under system Applications may request macOS authorization
+- Does not patch official app files; Codex.app is replaced only after the user confirms a client update
 
 ## Download and Usage
 
@@ -106,7 +115,7 @@ See [docs/PUBLISHING.md](docs/PUBLISHING.md) for repository and release instruct
 
 ## Sponsorship
 
-This project is sponsored by [Kao La API](https://www.appkaola.com). Sponsorship does not imply endorsement by or an official partnership with OpenAI, Microsoft, or Codex.
+Left sidebar sponsor: [**KAO LA API**](https://www.appkaola.com) — “One-stop access to leading large language models.” Sponsorship does not imply endorsement by or an official partnership with OpenAI, Microsoft, or Codex.
 
 ## License and Trademark Notice
 

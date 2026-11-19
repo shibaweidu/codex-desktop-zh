@@ -37,6 +37,8 @@ namespace CodexZhLauncher
         public string Message;
         public string LocaleDetail;
         public string MenuDetail;
+        public CodexProcessInfo SessionProcess;
+        public CodexInstall SessionInstall;
 
         public bool Complete
         {

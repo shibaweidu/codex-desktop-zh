@@ -59,7 +59,7 @@ namespace CodexZhLauncher
             return CodexProcessManager.Scan(install).TotalPotentialCount;
         }
 
-        private static async Task<CodexInstall> DetectStorePackageAsync()
+        public static async Task<CodexInstall> DetectStorePackageAsync()
         {
             var command =
                 "$p = Get-AppxPackage -Name '" + PackageName + "' | Sort-Object Version -Descending | Select-Object -First 1; " +
@@ -68,7 +68,8 @@ namespace CodexZhLauncher
                 "powershell.exe",
                 "-NoProfile -NonInteractive -ExecutionPolicy Bypass -Command " + ProcessRunner.QuoteArgument(command));
 
-            if (!result.Success || String.IsNullOrWhiteSpace(result.Output)) return null;
+            if (!result.Success) throw new InvalidOperationException("无法读取已安装的 Codex 包：" + result.Error);
+            if (String.IsNullOrWhiteSpace(result.Output)) return null;
 
             var serializer = new JavaScriptSerializer();
             var values = serializer.Deserialize<Dictionary<string, object>>(result.Output.Trim());

@@ -87,7 +87,8 @@ struct CodexDiscovery {
             version: version,
             bundleURL: resolvedBundle,
             executableURL: executable,
-            bundleIdentifier: identifier
+            bundleIdentifier: identifier,
+            buildVersion: info["CFBundleVersion"] as? String
         )
     }
 

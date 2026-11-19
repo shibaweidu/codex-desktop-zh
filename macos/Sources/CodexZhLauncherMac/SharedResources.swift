@@ -35,6 +35,17 @@ struct SharedResources {
         try read("i18n-bootstrap.js")
     }
 
+    func buildThemeScript(id: String, fontSize: Int) throws -> String {
+        let preset = WorkspaceTheme.find(id)
+        guard (id == "default" || preset != nil), (12...18).contains(fontSize) else {
+            throw WorkspaceServiceError.invalid("主题或字号无效。")
+        }
+        let payload: [String: Any] = ["id": id, "fontSize": fontSize, "background": preset?.background ?? "",
+            "sidebar": preset?.sidebar ?? "", "foreground": preset?.foreground ?? "", "accent": preset?.accent ?? ""]
+        let data = try JSONSerialization.data(withJSONObject: payload, options: [.sortedKeys])
+        return try replacing(read("theme-script.js"), placeholder: "__THEME_JSON__", value: String(decoding: data, as: UTF8.self))
+    }
+
     func buildMenuScript(platform: String = "macos") throws -> String {
         let groups: TranslationGroups = try decode("menu-translations.json")
         var translations = groups.common
@@ -50,11 +61,13 @@ struct SharedResources {
     }
 
     func selfTest() throws -> String {
+        let theme = try buildThemeScript(id: "default", fontSize: 14)
         let locale = try buildLocaleScript(locale: "zh-CN")
         let bootstrap = try buildI18nBootstrap()
         let menu = try buildMenuScript()
         let groups: TranslationGroups = try decode("menu-translations.json")
-        guard locale.contains("vscode://codex/set-setting"),
+        guard !theme.contains("__THEME_JSON__"), theme.contains("codex-zh-launcher-theme"),
+              locale.contains("vscode://codex/set-setting"),
               locale.contains("JSON.stringify({ key: 'localeOverride', value: locale })"),
               !locale.contains("params: { key: 'localeOverride'"),
               bootstrap.contains("72216192"),
@@ -69,7 +82,7 @@ struct SharedResources {
               !menu.localizedCaseInsensitiveContains("app.asar") else {
             throw ResourceError.selfTestFailed
         }
-        return "i18n-bootstrap=ok; locale-script=ok; menu-script=ok; translations=\(groups.common.count + groups.macos.count)"
+        return "theme-script=ok; i18n-bootstrap=ok; locale-script=ok; menu-script=ok; translations=\(groups.common.count + groups.macos.count)"
     }
 
     private func read(_ name: String) throws -> String {

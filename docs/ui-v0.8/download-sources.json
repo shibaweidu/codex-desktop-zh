@@ -1,0 +1,51 @@
+{
+  "purpose": "Design research snapshot, NOT a production update/download configuration",
+  "checkedOn": "2026-11-19",
+  "sourceManifestGeneratedAt": "2026-11-18T02:22:28Z",
+  "official": {
+    "windows": {
+      "storeProductId": "9PLM9XGG6VKS",
+      "url": "https://apps.microsoft.com/detail/9plm9xgg6vks",
+      "nativeUri": "ms-windows-store://pdp/?ProductId=9PLM9XGG6VKS",
+      "verification": "Product ID cross-checked against reference repository; HTTP HEAD returned 403 in this environment, not reported as a successful HTTP check"
+    },
+    "macosArm64": {
+      "url": "https://persistent.oaistatic.com/codex-app-prod/Codex.dmg",
+      "verification": "HTTP HEAD 200, application/x-apple-diskimage; installer not downloaded or installed"
+    },
+    "macosX64": {
+      "url": "https://persistent.oaistatic.com/codex-app-prod/Codex-latest-x64.dmg",
+      "verification": "HTTP HEAD 200, application/x-apple-diskimage; installer not downloaded or installed"
+    }
+  },
+  "communityMirror": {
+    "repository": "https://github.com/Wangnov/codex-app-mirror",
+    "manifest": "https://codexapp.agentsmirror.com/latest/manifest",
+    "checksums": "https://codexapp.agentsmirror.com/latest/checksums",
+    "schemaVersion": 5,
+    "shortLinks": {
+      "windowsX64": "https://codexapp.agentsmirror.com/latest/win-x64",
+      "windowsArm64": "https://codexapp.agentsmirror.com/latest/win-arm64",
+      "macosArm64": "https://codexapp.agentsmirror.com/latest/mac-arm64",
+      "macosX64": "https://codexapp.agentsmirror.com/latest/mac-intel"
+    },
+    "observedVersions": {
+      "windowsX64": { "appVersion": "26.1111.21308", "packageVersion": "26.1111.2228.0", "downloadable": true, "bytes": 1057802768 },
+      "windowsArm64": { "appVersion": "26.1111.21308", "packageVersion": "26.1111.2228.0", "downloadable": true, "bytes": 1172354770 },
+      "macosArm64": { "appVersion": "26.1111.71025", "downloadable": true, "bytes": 912663167, "sha256FromManifest": "67101dc77b2657fe9f594b48caf96d1b0d2a04aed557ee9981fcd49e5ef5c1f7" },
+      "macosX64": { "appVersion": "26.1111.71025", "downloadable": true, "bytes": 946664277, "sha256FromManifest": "848160c7795749e47bb7c59d65ecd5850aa4d690b5a9dcd49da3d21c8160bb81" }
+    },
+    "verification": "Manifest fetched successfully through HTTPS. Hash values are source metadata, not locally verified installer hashes. Short links not individually download-tested."
+  },
+  "referencesOnly": {
+    "manager": "https://github.com/Wangnov/Codex-App-Manager",
+    "skinsRepository": "https://github.com/Wangnov/awesome-codex-skins",
+    "skinsIndex": "https://skins.agentsmirror.com/index.json",
+    "notes": [
+      "The other manager's installer and updater are NOT Codex installers or this tool's updater.",
+      "Some community skins are personal-use; do not bundle their assets under this project's MIT license.",
+      "Do not use the manifest top-level codexVersion for every platform.",
+      "Windows MSIX URLs resolved from Store metadata may expire."
+    ]
+  }
+}

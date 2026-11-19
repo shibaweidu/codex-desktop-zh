@@ -5,6 +5,7 @@ struct AboutView: View {
     @ObservedObject var model: LauncherModel
     @Environment(\.dismiss) private var dismiss
     @State private var showsInstallConfirmation = false
+    @AppStorage("workspace.autoCheck") private var autoCheck = true
     private let accent = Color(red: 0.77, green: 0.71, blue: 0.99)
 
     var body: some View {
@@ -36,6 +37,7 @@ struct AboutView: View {
                 .padding(.top, 22)
 
             Divider().padding(.vertical, 20)
+            Toggle("启动时检查工具更新", isOn: $autoCheck).padding(.bottom, 16)
 
             HStack(spacing: 12) {
                 VStack(alignment: .leading, spacing: 4) {
@@ -51,7 +53,7 @@ struct AboutView: View {
                 Button(model.availableUpdate == nil ? "检查更新" : "重新检查") {
                     model.checkForUpdates()
                 }
-                .disabled(model.checkingForUpdates || model.updating)
+                .disabled(model.checkingForUpdates || model.working)
             }
 
             if model.availableUpdate != nil {
@@ -65,7 +67,7 @@ struct AboutView: View {
             Spacer()
 
             HStack(spacing: 10) {
-                Button("Kao La API 赞助支持") { model.openSponsor() }
+                Button("KAO LA API · 一站式顶级大模型调用平台") { model.openSponsor() }
                     .buttonStyle(.plain)
                     .font(.system(size: 11))
                     .foregroundStyle(.secondary)
@@ -76,7 +78,7 @@ struct AboutView: View {
             }
         }
         .padding(26)
-        .frame(width: 500, height: 360)
+        .frame(width: 500, height: 405)
         .background(Color(red: 0.075, green: 0.08, blue: 0.095))
         .preferredColorScheme(.dark)
         .alert("安装更新？", isPresented: $showsInstallConfirmation) {

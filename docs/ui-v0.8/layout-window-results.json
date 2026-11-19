@@ -1,0 +1,50 @@
+{
+  "reducedMotion": true,
+  "results": [
+    {
+      "overflow": [],
+      "page": "overview",
+      "passed": true,
+      "scrollWidth": 1024,
+      "sponsorVisible": true,
+      "width": 1024
+    },
+    {
+      "overflow": [],
+      "page": "downloads",
+      "passed": true,
+      "scrollWidth": 1024,
+      "sponsorVisible": true,
+      "width": 1024
+    },
+    {
+      "overflow": [],
+      "page": "localization",
+      "passed": true,
+      "scrollWidth": 1024,
+      "sponsorVisible": true,
+      "width": 1024
+    },
+    {
+      "overflow": [],
+      "page": "themes",
+      "passed": true,
+      "scrollWidth": 1024,
+      "sponsorVisible": true,
+      "width": 1024
+    },
+    {
+      "overflow": [],
+      "page": "diagnostics",
+      "passed": true,
+      "scrollWidth": 1024,
+      "sponsorVisible": true,
+      "width": 1024
+    }
+  ],
+  "transition": "0s",
+  "viewport": [
+    1024,
+    768
+  ]
+}

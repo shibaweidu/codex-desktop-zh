@@ -22,6 +22,7 @@ jobs:
           $process = Start-Process -FilePath $exe -ArgumentList '--self-test' -Wait -PassThru -WindowStyle Hidden -RedirectStandardOutput self-test.out
           if ($process.ExitCode -ne 0) { throw "Self-test failed: $($process.ExitCode)" }
           .\test-shutdown.ps1
+          .\test-workspace.ps1
           $expected = '${{ github.ref_name }}'.TrimStart('v') + '.0'
           $actual = [System.Diagnostics.FileVersionInfo]::GetVersionInfo((Resolve-Path $exe)).FileVersion
           if ($actual -ne $expected) { throw "Tag does not match executable version $actual." }
@@ -29,6 +30,18 @@ jobs:
         with:
           name: release-windows
           path: dist/Codex-Zh-Launcher-Windows-x64.exe
+
+  theme-fixture:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm install --no-save --package-lock=false playwright@1.62.1
+      - run: npx playwright install --with-deps chromium
+      - run: node tests/theme-script.test.cjs
 
   macos:
     name: macOS ${{ matrix.arch }}
@@ -68,7 +81,7 @@ jobs:
           path: dist/${{ matrix.asset }}
 
   publish:
-    needs: [windows, macos]
+    needs: [windows, macos, theme-fixture]
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:

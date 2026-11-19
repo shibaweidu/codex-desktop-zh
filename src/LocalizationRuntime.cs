@@ -36,6 +36,8 @@ namespace CodexZhLauncher
 
             report.ProcessId = AppActivation.Launch(install, arguments);
             report.Started = true;
+            report.SessionInstall = install;
+            report.SessionProcess = CodexProcessManager.Scan(install).Verified.Find(p => p.Id == (int)report.ProcessId);
             AppLog.Write("launch.started pid=" + report.ProcessId);
             ReportProgress(onProgress, "Codex 已启动，正在连接本地汉化接口。");
 
@@ -201,6 +203,16 @@ namespace CodexZhLauncher
   });
 })()";
             return await DevToolsClient.EvaluateAsync(target.WebSocketDebuggerUrl, script, false);
+        }
+
+        public static async Task<string> ApplyThemeAsync(LaunchReport report, string theme, int fontSize)
+        {
+            if (report == null || !report.Started || report.RendererPort <= 0)
+                throw new InvalidOperationException("请先通过本工具启动 Codex，再应用运行时配色。");
+            if (report.SessionProcess == null || report.SessionInstall == null || !CodexProcessManager.Scan(report.SessionInstall).Verified.Exists(p => p.Id == report.SessionProcess.Id && p.StartTimeUtcTicks == report.SessionProcess.StartTimeUtcTicks))
+                throw new InvalidOperationException("原启动会话已结束或无法验证，请通过本工具重新启动 Codex。");
+            var target = await WaitForRendererTargetAsync(report.RendererPort, TimeSpan.FromSeconds(8));
+            return await DevToolsClient.EvaluateAsync(target.WebSocketDebuggerUrl, ThemePreset.BuildScript(theme, fontSize), false);
         }
 
         private static async Task<DevToolsTarget> WaitForRendererTargetAsync(int port, TimeSpan timeout)

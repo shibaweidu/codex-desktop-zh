@@ -4,9 +4,21 @@ struct CodexInstall: Equatable {
     let kind: String
     let displayName: String
     let version: String
+    let buildVersion: String?
     let bundleURL: URL
     let executableURL: URL
     let bundleIdentifier: String
+
+    init(kind: String, displayName: String, version: String, bundleURL: URL, executableURL: URL,
+         bundleIdentifier: String, buildVersion: String? = nil) {
+        self.kind = kind
+        self.displayName = displayName
+        self.version = version
+        self.buildVersion = buildVersion
+        self.bundleURL = bundleURL
+        self.executableURL = executableURL
+        self.bundleIdentifier = bundleIdentifier
+    }
 
     var isValid: Bool {
         FileManager.default.fileExists(atPath: executableURL.path)

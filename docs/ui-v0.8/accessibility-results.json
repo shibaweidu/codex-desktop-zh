@@ -1,0 +1,522 @@
+[
+  {
+    "page": "overview",
+    "success": true,
+    "counts": {
+      "inapplicable": 53,
+      "incomplete": 1,
+      "passes": 35,
+      "violations": 0
+    },
+    "violations": [],
+    "incomplete": [
+      {
+        "help": "Elements must meet minimum color contrast ratio thresholds",
+        "helpUrl": "https://dequeuniversity.com/rules/axe/4.12/color-contrast?application=axeAPI",
+        "id": "color-contrast",
+        "impact": "serious",
+        "nodeCount": 54,
+        "nodes": [
+          {
+            "failureSummary": "Fix any of the following:\n  Element's background color could not be determined due to a background gradient",
+            "html": "<span class=\"title-app\"><span class=\"brand-mini\" aria-hidden=\"true\"><svg viewBox=\"0 0 24 24\"><path d=\"m8 6-6 6 6 6m8-12 6 6-6 6M14 3l-4 18\"></path></svg></span> Codex 汉化增强工具</span>",
+            "target": [
+              ".title-app"
+            ]
+          },
+          {
+            "failureSummary": "Fix any of the following:\n  Element's background color could not be determined due to a background gradient",
+            "html": "<span class=\"prototype-label\">交互原型 <span>· 本机状态为示例</span></span>",
+            "target": [
+              ".prototype-label"
+            ]
+          },
+          {
+            "failureSummary": "Fix any of the following:\n  Element's background color could not be determined due to a background gradient",
+            "html": "<span>· 本机状态为示例</span>",
+            "target": [
+              ".prototype-label > span"
+            ]
+          },
+          {
+            "failureSummary": "Fix any of the following:\n  Element's background color could not be determined due to a background gradient",
+            "html": "<span>Codex<span class=\"brand-sub\">汉化增强工具</span></span>",
+            "target": [
+              ".brand > span:nth-child(2)"
+            ]
+          },
+          {
+            "failureSummary": "Fix any of the following:\n  Element's background color could not be determined due to a background gradient",
+            "html": "<span class=\"brand-sub\">汉化增强工具</span>",
+            "target": [
+              ".brand-sub"
+            ]
+          },
+          {
+            "failureSummary": "Fix any of the following:\n  Element's background color could not be determined due to a background gradient",
+            "html": "<button class=\"nav-item active\" data-page=\"overview\" aria-current=\"page\">",
+            "target": [
+              ".active"
+            ]
+          },
+          {
+            "failureSummary": "Fix any of the following:\n  Element's background color could not be determined due to a background gradient",
+            "html": "<button class=\"nav-item\" data-page=\"downloads\"><span data-icon=\"download\"><svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M12 3v12m-5-5 5 5 5-5M4 16v5h16v-5\"></path></svg></span>下载 Codex</button>",
+            "target": [
+              ".nav-item[data-page=\"downloads\"]"
+            ]
+          },
+          {
+            "failureSummary": "Fix any of the following:\n  Element's background color could not be determined due to a background gradient",
+            "html": "<button class=\"nav-item\" data-page=\"localization\"><span data-icon=\"language\"><svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M3 5h12M9 3v2m4 0c-1 7-4 10-9 12m1-9c1 4 4 7 8 9m1 4 4-11 4 11m-7-3h6\"></path></svg></span>界面汉化</button>",
+            "target": [
+              "button[data-page=\"localization\"]"
+            ]
+          },
+          {
+            "failureSummary": "Fix any of the following:\n  Element's background color could not be determined due to a background gradient",
+            "html": "<button class=\"nav-item\" data-page=\"themes\">",
+            "target": [
+              ".nav-item[data-page=\"themes\"]"
+            ]
+          },
+          {
+            "failureSummary": "Fix any of the following:\n  Element's background color could not be determined due to a background gradient",
+            "html": "<button class=\"nav-item\" data-page=\"diagnostics\"><span data-icon=\"terminal\"><svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><rect x=\"3\" y=\"4\" width=\"18\" height=\"16\" rx=\"3\"></rect><path d=\"m7 9 3 3-3 3m6 0h4\"></path></svg></span>日志诊断</button>",
+            "target": [
+              ".nav-item[data-page=\"diagnostics\"]"
+            ]
+          }
+        ],
+        "tags": [
+          "cat.color",
+          "wcag2aa",
+          "wcag143",
+          "TTv5",
+          "TT13.c",
+          "EN-301-549",
+          "EN-9.1.4.3",
+          "ACT",
+          "RGAAv4",
+          "RGAA-3.2.1"
+        ]
+      }
+    ]
+  },
+  {
+    "page": "downloads",
+    "success": true,
+    "counts": {
+      "inapplicable": 48,
+      "incomplete": 1,
+      "passes": 41,
+      "violations": 0
+    },
+    "violations": [],
+    "incomplete": [
+      {
+        "help": "Elements must meet minimum color contrast ratio thresholds",
+        "helpUrl": "https://dequeuniversity.com/rules/axe/4.12/color-contrast?application=axeAPI",
+        "id": "color-contrast",
+        "impact": "serious",
+        "nodeCount": 53,
+        "nodes": [
+          {
+            "failureSummary": "Fix any of the following:\n  Element's background color could not be determined due to a background gradient",
+            "html": "<span class=\"title-app\"><span class=\"brand-mini\" aria-hidden=\"true\"><svg viewBox=\"0 0 24 24\"><path d=\"m8 6-6 6 6 6m8-12 6 6-6 6M14 3l-4 18\"></path></svg></span> Codex 汉化增强工具</span>",
+            "target": [
+              ".title-app"
+            ]
+          },
+          {
+            "failureSummary": "Fix any of the following:\n  Element's background color could not be determined due to a background gradient",
+            "html": "<span class=\"prototype-label\">交互原型 <span>· 本机状态为示例</span></span>",
+            "target": [
+              ".prototype-label"
+            ]
+          },
+          {
+            "failureSummary": "Fix any of the following:\n  Element's background color could not be determined due to a background gradient",
+            "html": "<span>· 本机状态为示例</span>",
+            "target": [
+              ".prototype-label > span"
+            ]
+          },
+          {
+            "failureSummary": "Fix any of the following:\n  Element's background color could not be determined due to a background gradient",
+            "html": "<span>Codex<span class=\"brand-sub\">汉化增强工具</span></span>",
+            "target": [
+              ".brand > span:nth-child(2)"
+            ]
+          },
+          {
+            "failureSummary": "Fix any of the following:\n  Element's background color could not be determined due to a background gradient",
+            "html": "<span class=\"brand-sub\">汉化增强工具</span>",
+            "target": [
+              ".brand-sub"
+            ]
+          },
+          {
+            "failureSummary": "Fix any of the following:\n  Element's background color could not be determined due to a background gradient",
+            "html": "<button class=\"nav-item\" data-page=\"overview\">",
+            "target": [
+              "button[data-page=\"overview\"]"
+            ]
+          },
+          {
+            "failureSummary": "Fix any of the following:\n  Element's background color could not be determined due to a background gradient",
+            "html": "<button class=\"nav-item active\" data-page=\"downloads\" aria-current=\"page\"><span data-icon=\"download\"><svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M12 3v12m-5-5 5 5 5-5M4 16v5h16v-5\"></path></svg></span>下载 Codex</button>",
+            "target": [
+              ".active"
+            ]
+          },
+          {
+            "failureSummary": "Fix any of the following:\n  Element's background color could not be determined due to a background gradient",
+            "html": "<button class=\"nav-item\" data-page=\"localization\"><span data-icon=\"language\"><svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M3 5h12M9 3v2m4 0c-1 7-4 10-9 12m1-9c1 4 4 7 8 9m1 4 4-11 4 11m-7-3h6\"></path></svg></span>界面汉化</button>",
+            "target": [
+              "button[data-page=\"localization\"]"
+            ]
+          },
+          {
+            "failureSummary": "Fix any of the following:\n  Element's background color could not be determined due to a background gradient",
+            "html": "<button class=\"nav-item\" data-page=\"themes\">",
+            "target": [
+              "button[data-page=\"themes\"]"
+            ]
+          },
+          {
+            "failureSummary": "Fix any of the following:\n  Element's background color could not be determined due to a background gradient",
+            "html": "<button class=\"nav-item\" data-page=\"diagnostics\"><span data-icon=\"terminal\"><svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><rect x=\"3\" y=\"4\" width=\"18\" height=\"16\" rx=\"3\"></rect><path d=\"m7 9 3 3-3 3m6 0h4\"></path></svg></span>日志诊断</button>",
+            "target": [
+              ".nav-item[data-page=\"diagnostics\"]"
+            ]
+          }
+        ],
+        "tags": [
+          "cat.color",
+          "wcag2aa",
+          "wcag143",
+          "TTv5",
+          "TT13.c",
+          "EN-301-549",
+          "EN-9.1.4.3",
+          "ACT",
+          "RGAAv4",
+          "RGAA-3.2.1"
+        ]
+      }
+    ]
+  },
+  {
+    "page": "localization",
+    "success": true,
+    "counts": {
+      "inapplicable": 53,
+      "incomplete": 1,
+      "passes": 36,
+      "violations": 0
+    },
+    "violations": [],
+    "incomplete": [
+      {
+        "help": "Elements must meet minimum color contrast ratio thresholds",
+        "helpUrl": "https://dequeuniversity.com/rules/axe/4.12/color-contrast?application=axeAPI",
+        "id": "color-contrast",
+        "impact": "serious",
+        "nodeCount": 44,
+        "nodes": [
+          {
+            "failureSummary": "Fix any of the following:\n  Element's background color could not be determined due to a background gradient",
+            "html": "<span class=\"title-app\"><span class=\"brand-mini\" aria-hidden=\"true\"><svg viewBox=\"0 0 24 24\"><path d=\"m8 6-6 6 6 6m8-12 6 6-6 6M14 3l-4 18\"></path></svg></span> Codex 汉化增强工具</span>",
+            "target": [
+              ".title-app"
+            ]
+          },
+          {
+            "failureSummary": "Fix any of the following:\n  Element's background color could not be determined due to a background gradient",
+            "html": "<span class=\"prototype-label\">交互原型 <span>· 本机状态为示例</span></span>",
+            "target": [
+              ".prototype-label"
+            ]
+          },
+          {
+            "failureSummary": "Fix any of the following:\n  Element's background color could not be determined due to a background gradient",
+            "html": "<span>· 本机状态为示例</span>",
+            "target": [
+              ".prototype-label > span"
+            ]
+          },
+          {
+            "failureSummary": "Fix any of the following:\n  Element's background color could not be determined due to a background gradient",
+            "html": "<span>Codex<span class=\"brand-sub\">汉化增强工具</span></span>",
+            "target": [
+              ".brand > span:nth-child(2)"
+            ]
+          },
+          {
+            "failureSummary": "Fix any of the following:\n  Element's background color could not be determined due to a background gradient",
+            "html": "<span class=\"brand-sub\">汉化增强工具</span>",
+            "target": [
+              ".brand-sub"
+            ]
+          },
+          {
+            "failureSummary": "Fix any of the following:\n  Element's background color could not be determined due to a background gradient",
+            "html": "<button class=\"nav-item\" data-page=\"overview\">",
+            "target": [
+              "button[data-page=\"overview\"]"
+            ]
+          },
+          {
+            "failureSummary": "Fix any of the following:\n  Element's background color could not be determined due to a background gradient",
+            "html": "<button class=\"nav-item\" data-page=\"downloads\"><span data-icon=\"download\"><svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M12 3v12m-5-5 5 5 5-5M4 16v5h16v-5\"></path></svg></span>下载 Codex</button>",
+            "target": [
+              "button[data-page=\"downloads\"]"
+            ]
+          },
+          {
+            "failureSummary": "Fix any of the following:\n  Element's background color could not be determined due to a background gradient",
+            "html": "<button class=\"nav-item active\" data-page=\"localization\" aria-current=\"page\"><span data-icon=\"language\"><svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M3 5h12M9 3v2m4 0c-1 7-4 10-9 12m1-9c1 4 4 7 8 9m1 4 4-11 4 11m-7-3h6\"></path></svg></span>界面汉化</button>",
+            "target": [
+              ".active"
+            ]
+          },
+          {
+            "failureSummary": "Fix any of the following:\n  Element's background color could not be determined due to a background gradient",
+            "html": "<button class=\"nav-item\" data-page=\"themes\">",
+            "target": [
+              "button[data-page=\"themes\"]"
+            ]
+          },
+          {
+            "failureSummary": "Fix any of the following:\n  Element's background color could not be determined due to a background gradient",
+            "html": "<button class=\"nav-item\" data-page=\"diagnostics\"><span data-icon=\"terminal\"><svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><rect x=\"3\" y=\"4\" width=\"18\" height=\"16\" rx=\"3\"></rect><path d=\"m7 9 3 3-3 3m6 0h4\"></path></svg></span>日志诊断</button>",
+            "target": [
+              ".nav-item[data-page=\"diagnostics\"]"
+            ]
+          }
+        ],
+        "tags": [
+          "cat.color",
+          "wcag2aa",
+          "wcag143",
+          "TTv5",
+          "TT13.c",
+          "EN-301-549",
+          "EN-9.1.4.3",
+          "ACT",
+          "RGAAv4",
+          "RGAA-3.2.1"
+        ]
+      }
+    ]
+  },
+  {
+    "page": "themes",
+    "success": true,
+    "counts": {
+      "inapplicable": 49,
+      "incomplete": 1,
+      "passes": 40,
+      "violations": 0
+    },
+    "violations": [],
+    "incomplete": [
+      {
+        "help": "Elements must meet minimum color contrast ratio thresholds",
+        "helpUrl": "https://dequeuniversity.com/rules/axe/4.12/color-contrast?application=axeAPI",
+        "id": "color-contrast",
+        "impact": "serious",
+        "nodeCount": 47,
+        "nodes": [
+          {
+            "failureSummary": "Fix any of the following:\n  Element's background color could not be determined due to a background gradient",
+            "html": "<span class=\"title-app\"><span class=\"brand-mini\" aria-hidden=\"true\"><svg viewBox=\"0 0 24 24\"><path d=\"m8 6-6 6 6 6m8-12 6 6-6 6M14 3l-4 18\"></path></svg></span> Codex 汉化增强工具</span>",
+            "target": [
+              ".title-app"
+            ]
+          },
+          {
+            "failureSummary": "Fix any of the following:\n  Element's background color could not be determined due to a background gradient",
+            "html": "<span class=\"prototype-label\">交互原型 <span>· 本机状态为示例</span></span>",
+            "target": [
+              ".prototype-label"
+            ]
+          },
+          {
+            "failureSummary": "Fix any of the following:\n  Element's background color could not be determined due to a background gradient",
+            "html": "<span>· 本机状态为示例</span>",
+            "target": [
+              ".prototype-label > span"
+            ]
+          },
+          {
+            "failureSummary": "Fix any of the following:\n  Element's background color could not be determined due to a background gradient",
+            "html": "<span>Codex<span class=\"brand-sub\">汉化增强工具</span></span>",
+            "target": [
+              ".brand > span:nth-child(2)"
+            ]
+          },
+          {
+            "failureSummary": "Fix any of the following:\n  Element's background color could not be determined due to a background gradient",
+            "html": "<span class=\"brand-sub\">汉化增强工具</span>",
+            "target": [
+              ".brand-sub"
+            ]
+          },
+          {
+            "failureSummary": "Fix any of the following:\n  Element's background color could not be determined due to a background gradient",
+            "html": "<button class=\"nav-item\" data-page=\"overview\">",
+            "target": [
+              "button[data-page=\"overview\"]"
+            ]
+          },
+          {
+            "failureSummary": "Fix any of the following:\n  Element's background color could not be determined due to a background gradient",
+            "html": "<button class=\"nav-item\" data-page=\"downloads\"><span data-icon=\"download\"><svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M12 3v12m-5-5 5 5 5-5M4 16v5h16v-5\"></path></svg></span>下载 Codex</button>",
+            "target": [
+              "button[data-page=\"downloads\"]"
+            ]
+          },
+          {
+            "failureSummary": "Fix any of the following:\n  Element's background color could not be determined due to a background gradient",
+            "html": "<button class=\"nav-item\" data-page=\"localization\"><span data-icon=\"language\"><svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M3 5h12M9 3v2m4 0c-1 7-4 10-9 12m1-9c1 4 4 7 8 9m1 4 4-11 4 11m-7-3h6\"></path></svg></span>界面汉化</button>",
+            "target": [
+              "button[data-page=\"localization\"]"
+            ]
+          },
+          {
+            "failureSummary": "Fix any of the following:\n  Element's background color could not be determined due to a background gradient",
+            "html": "<button class=\"nav-item active\" data-page=\"themes\" aria-current=\"page\">",
+            "target": [
+              ".active"
+            ]
+          },
+          {
+            "failureSummary": "Fix any of the following:\n  Element's background color could not be determined due to a background gradient",
+            "html": "<button class=\"nav-item\" data-page=\"diagnostics\"><span data-icon=\"terminal\"><svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><rect x=\"3\" y=\"4\" width=\"18\" height=\"16\" rx=\"3\"></rect><path d=\"m7 9 3 3-3 3m6 0h4\"></path></svg></span>日志诊断</button>",
+            "target": [
+              ".nav-item[data-page=\"diagnostics\"]"
+            ]
+          }
+        ],
+        "tags": [
+          "cat.color",
+          "wcag2aa",
+          "wcag143",
+          "TTv5",
+          "TT13.c",
+          "EN-301-549",
+          "EN-9.1.4.3",
+          "ACT",
+          "RGAAv4",
+          "RGAA-3.2.1"
+        ]
+      }
+    ]
+  },
+  {
+    "page": "diagnostics",
+    "success": true,
+    "counts": {
+      "inapplicable": 49,
+      "incomplete": 1,
+      "passes": 39,
+      "violations": 0
+    },
+    "violations": [],
+    "incomplete": [
+      {
+        "help": "Elements must meet minimum color contrast ratio thresholds",
+        "helpUrl": "https://dequeuniversity.com/rules/axe/4.12/color-contrast?application=axeAPI",
+        "id": "color-contrast",
+        "impact": "serious",
+        "nodeCount": 40,
+        "nodes": [
+          {
+            "failureSummary": "Fix any of the following:\n  Element's background color could not be determined due to a background gradient",
+            "html": "<span class=\"title-app\"><span class=\"brand-mini\" aria-hidden=\"true\"><svg viewBox=\"0 0 24 24\"><path d=\"m8 6-6 6 6 6m8-12 6 6-6 6M14 3l-4 18\"></path></svg></span> Codex 汉化增强工具</span>",
+            "target": [
+              ".title-app"
+            ]
+          },
+          {
+            "failureSummary": "Fix any of the following:\n  Element's background color could not be determined due to a background gradient",
+            "html": "<span class=\"prototype-label\">交互原型 <span>· 本机状态为示例</span></span>",
+            "target": [
+              ".prototype-label"
+            ]
+          },
+          {
+            "failureSummary": "Fix any of the following:\n  Element's background color could not be determined due to a background gradient",
+            "html": "<span>· 本机状态为示例</span>",
+            "target": [
+              ".prototype-label > span"
+            ]
+          },
+          {
+            "failureSummary": "Fix any of the following:\n  Element's background color could not be determined due to a background gradient",
+            "html": "<span>Codex<span class=\"brand-sub\">汉化增强工具</span></span>",
+            "target": [
+              ".brand > span:nth-child(2)"
+            ]
+          },
+          {
+            "failureSummary": "Fix any of the following:\n  Element's background color could not be determined due to a background gradient",
+            "html": "<span class=\"brand-sub\">汉化增强工具</span>",
+            "target": [
+              ".brand-sub"
+            ]
+          },
+          {
+            "failureSummary": "Fix any of the following:\n  Element's background color could not be determined due to a background gradient",
+            "html": "<button class=\"nav-item\" data-page=\"overview\">",
+            "target": [
+              "button[data-page=\"overview\"]"
+            ]
+          },
+          {
+            "failureSummary": "Fix any of the following:\n  Element's background color could not be determined due to a background gradient",
+            "html": "<button class=\"nav-item\" data-page=\"downloads\"><span data-icon=\"download\"><svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M12 3v12m-5-5 5 5 5-5M4 16v5h16v-5\"></path></svg></span>下载 Codex</button>",
+            "target": [
+              "button[data-page=\"downloads\"]"
+            ]
+          },
+          {
+            "failureSummary": "Fix any of the following:\n  Element's background color could not be determined due to a background gradient",
+            "html": "<button class=\"nav-item\" data-page=\"localization\"><span data-icon=\"language\"><svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M3 5h12M9 3v2m4 0c-1 7-4 10-9 12m1-9c1 4 4 7 8 9m1 4 4-11 4 11m-7-3h6\"></path></svg></span>界面汉化</button>",
+            "target": [
+              "button[data-page=\"localization\"]"
+            ]
+          },
+          {
+            "failureSummary": "Fix any of the following:\n  Element's background color could not be determined due to a background gradient",
+            "html": "<button class=\"nav-item\" data-page=\"themes\">",
+            "target": [
+              "button[data-page=\"themes\"]"
+            ]
+          },
+          {
+            "failureSummary": "Fix any of the following:\n  Element's background color could not be determined due to a background gradient",
+            "html": "<button class=\"nav-item active\" data-page=\"diagnostics\" aria-current=\"page\"><span data-icon=\"terminal\"><svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><rect x=\"3\" y=\"4\" width=\"18\" height=\"16\" rx=\"3\"></rect><path d=\"m7 9 3 3-3 3m6 0h4\"></path></svg></span>日志诊断</button>",
+            "target": [
+              "button[aria-current=\"page\"]"
+            ]
+          }
+        ],
+        "tags": [
+          "cat.color",
+          "wcag2aa",
+          "wcag143",
+          "TTv5",
+          "TT13.c",
+          "EN-301-549",
+          "EN-9.1.4.3",
+          "ACT",
+          "RGAAv4",
+          "RGAA-3.2.1"
+        ]
+      }
+    ]
+  }
+]

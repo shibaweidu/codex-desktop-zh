@@ -4,14 +4,25 @@
 
 ![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS-5B8DEF)
 ![Architecture](https://img.shields.io/badge/architecture-x64%20%7C%20arm64-6D7280)
-![Version](https://img.shields.io/badge/version-v0.7.7-C4B5FD)
+![Version](https://img.shields.io/badge/version-v0.8.0-C4B5FD)
 ![License](https://img.shields.io/badge/license-MIT-31B77A)
 
 **Codex Desktop 中文汉化增强工具**是一款面向 Windows 和 macOS 的 Codex 汉化启动器。它支持 Microsoft Store、便携版和 macOS App Bundle，可启用中文界面、翻译 Electron 原生菜单，并在 Codex 已运行时安全关闭后以中文模式重新启动。
 
 项目不解包、不替换 `app.asar`，不修改 Microsoft Store 安装目录，也不读取 Codex 账号、令牌或项目文件。
 
-当前版本：`0.7.7`
+当前开发版本：`0.8.0`
+
+## v0.8 本地开发版
+
+v0.8.0 提供原生 WPF / SwiftUI 五页工作台：**概览、下载 Codex、界面汉化、主题外观、日志诊断**。深灰材质、淡紫强调色，赞助入口位于左侧栏。Windows 更新仅下载并校验，安装前由用户确认；macOS 更新还需通过发布工作流中的双架构构建与测试。首次发布状态以 GitHub Releases 页和 CI 结果为准。
+
+- **社区镜像更新**：Windows 和 macOS 都只读取 Wangnov 社区镜像清单与镜像文件；自动识别本机版本与芯片，最新版不下载，有新版时自动下载并校验。Windows 按 MSIX 包版本比较；macOS 先比较应用版本，版本相同时再比较构建号。Windows 安装前确认并由 AppX/UAC 验证签名；macOS 安装前确认，校验 Apple 签名、Team ID 和架构后覆盖重启。系统 Applications 目录可能要求 macOS 管理员授权；取消授权或校验失败会保留原应用。不强杀正在运行的 Codex；Windows 便携版不自动覆盖。
+- **运行时配色**：六款项目自有纯色预设和 12–18 字号预览。仅向本工具启动且进程身份仍可验证的会话添加自有 style，恢复时只移除该 style；不修改客户端文件、原生设置、菜单或代码语法配色。完整页面刷新后可能需要重新应用，不承诺新版 Codex 全部组件均适配。
+- **工具强调色**：只改变工具的主按钮、选中导航和进度强调色，保留深色材质；纸白预设在深色工具中使用淡紫回退以保持可读性。
+- **日志与设置**：日志搜索、提示/错误筛选、复制、导出；支持关闭启动时自动检查更新。
+
+验收状态：Windows 构建与隔离测试已执行；macOS 本轮新增代码和测试尚待 Mac / CI 构建与双架构实机验收。详细边界与步骤见 [开发计划](docs/DEVELOPMENT-v0.8.md) 和 [原生验收记录](docs/NATIVE-v0.8-VERIFICATION.md)。
 
 ## 主要功能
 
@@ -27,7 +38,8 @@
 - 深色 WPF / SwiftUI 界面、实时状态和本地诊断日志
 - 启动时自动检查 GitHub Releases，确认后下载、校验、覆盖并重启工具
 - 关于界面提供版本、手动检查更新、反馈支持和项目仓库入口
-- 不要求管理员权限，不修改 Codex 官方文件
+- 工具日常运行无需管理员权限；更新系统 Applications 中的 Codex 时，macOS 可能要求管理员授权
+- 不修改 Codex 官方文件，只有用户确认客户端更新后才替换 Codex.app
 
 ## 下载与使用
 
@@ -226,7 +238,7 @@ macOS ZIP 使用免费的 ad-hoc 签名，没有 Apple Developer ID 签名和公
 
 ## 赞助支持
 
-本项目由 [Kao La API](https://www.appkaola.com) 赞助支持。赞助关系不代表 OpenAI、Microsoft 或 Codex 对该服务的认可或官方合作。
+左侧赞助商：**[KAO LA API](https://www.appkaola.com)** — 一站式顶级大模型调用平台。赞助关系不代表 OpenAI、Microsoft 或 Codex 对该服务的认可或官方合作。
 
 ## 贡献与安全
 

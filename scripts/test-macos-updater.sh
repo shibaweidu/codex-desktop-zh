@@ -26,6 +26,7 @@ TARGET_APP="$TARGET_PARENT/Codex 汉化增强工具.app"
 EXTRACTED="$UPDATE_ROOT/extracted"
 STAGED_APP="$EXTRACTED/Codex 汉化增强工具.app"
 HELPER="$UPDATE_ROOT/CodexZhLauncherUpdater"
+EXPECTED_VERSION="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$SOURCE_APP/Contents/Info.plist")"
 
 cleanup() {
   [[ -d "$UPDATE_ROOT" ]] && rm -rf "$UPDATE_ROOT"
@@ -46,12 +47,12 @@ chmod 755 "$HELPER"
   "$TARGET_APP" \
   "$STAGED_APP" \
   "$UPDATE_ROOT" \
-  0.7.7
+  "$EXPECTED_VERSION"
 
 test -d "$TARGET_APP"
 test -z "$(find "$TARGET_PARENT" -maxdepth 1 -name '.CodexZhLauncher-update-backup-*' -print -quit)"
 codesign --verify --deep --strict "$TARGET_APP"
 VERSION="$(plutil -extract CFBundleShortVersionString raw -o - "$TARGET_APP/Contents/Info.plist")"
-test "$VERSION" = "0.7.7"
+test "$VERSION" = "$EXPECTED_VERSION"
 test ! -e "$UPDATE_ROOT"
 echo "macos_updater=ok arch=$ARCH"

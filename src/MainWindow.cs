@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
@@ -17,19 +17,19 @@ using Microsoft.Win32;
 
 namespace CodexZhLauncher
 {
-    internal sealed class MainWindow : Window
+    internal sealed partial class MainWindow : Window
     {
-        private readonly SolidColorBrush Accent = Brush("#31B77A");
-        private readonly SolidColorBrush AccentHover = Brush("#3BC98A");
-        private readonly SolidColorBrush AccentPressed = Brush("#249A64");
+        private readonly SolidColorBrush Accent = Brush("#C4B5FD");
+        private readonly SolidColorBrush AccentHover = Brush("#D8CCFF");
+        private readonly SolidColorBrush AccentPressed = Brush("#A78BFA");
         private readonly SolidColorBrush Restart = Brush("#C4B5FD");
         private readonly SolidColorBrush RestartHover = Brush("#D8CCFF");
         private readonly SolidColorBrush RestartPressed = Brush("#A78BFA");
         private readonly SolidColorBrush TextPrimary = Brush("#F3F5F7");
-        private readonly SolidColorBrush TextSecondary = Brush("#929AA3");
-        private readonly SolidColorBrush BorderColor = Brush("#2B3035");
-        private readonly SolidColorBrush CanvasColor = Brush("#111315");
-        private readonly SolidColorBrush LogColor = Brush("#0B0D0F");
+        private readonly SolidColorBrush TextSecondary = Brush("#B9B7C5");
+        private readonly SolidColorBrush BorderColor = Brush("#45454F");
+        private readonly SolidColorBrush CanvasColor = Brush("#1C1D23");
+        private readonly SolidColorBrush LogColor = Brush("#17181E");
         private readonly SolidColorBrush Warning = Brush("#C4B5FD");
         private readonly SolidColorBrush Danger = Brush("#F26D6D");
 
@@ -51,6 +51,9 @@ namespace CodexZhLauncher
         private int lastRunningCount = -1;
         private string shutdownFailureDetail;
         private bool updatePromptShown;
+        private string lastLaunchLocale = "zh-CN";
+        private string lastOperationError;
+        private bool allowsUpdateExit;
 
         [DllImport("dwmapi.dll")]
         private static extern int DwmSetWindowAttribute(
@@ -62,18 +65,19 @@ namespace CodexZhLauncher
         public MainWindow()
         {
             Title = "Codex 汉化增强工具";
-            Width = 820;
-            Height = 620;
-            MinWidth = 680;
-            MinHeight = 500;
+            Width = 1140;
+            Height = 800;
+            MinWidth = 960;
+            MinHeight = 680;
             ResizeMode = ResizeMode.CanResize;
             WindowStartupLocation = WindowStartupLocation.CenterScreen;
             Background = CanvasColor;
-            FontFamily = new FontFamily("Microsoft YaHei UI");
+            FontFamily = new FontFamily("Segoe UI, Microsoft YaHei UI");
             FontSize = 13;
             UseLayoutRounding = true;
             SnapsToDevicePixels = true;
-            Content = BuildLayout();
+            Content = BuildWorkspace();
+            ApplyToolAccent();
             ApplyToolIcon();
 
             stateTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(1.5) };
@@ -86,112 +90,8 @@ namespace CodexZhLauncher
                 stateTimer.Start();
                 await CheckForUpdatesOnStartupAsync();
             };
-            Closed += delegate { stateTimer.Stop(); };
-        }
-
-        private UIElement BuildLayout()
-        {
-            var root = new Grid
-            {
-                Margin = new Thickness(30, 24, 30, 28),
-                Background = CanvasColor
-            };
-            root.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
-            root.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
-            root.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
-            root.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
-            root.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
-            root.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
-
-            AddAt(root, BuildHeader(), 0);
-            AddAt(root, BuildStatus(), 1);
-            AddAt(root, BuildAction(), 2);
-
-            progress = new ProgressBar
-            {
-                Height = 2,
-                Margin = new Thickness(0, 0, 0, 19),
-                BorderThickness = new Thickness(0),
-                Background = BorderColor,
-                Foreground = Accent,
-                IsIndeterminate = true,
-                Opacity = 0
-            };
-            AddAt(root, progress, 3);
-            AddAt(root, BuildLogHeader(), 4);
-            AddAt(root, BuildLogPanel(), 5);
-            return root;
-        }
-
-        private UIElement BuildHeader()
-        {
-            var grid = new Grid { Margin = new Thickness(0, 0, 0, 22) };
-            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-
-            logoImage = new Image
-            {
-                Width = 40,
-                Height = 40,
-                Stretch = Stretch.Uniform,
-                Margin = new Thickness(0, 0, 13, 0),
-                VerticalAlignment = VerticalAlignment.Center
-            };
-            Grid.SetColumn(logoImage, 0);
-            grid.Children.Add(logoImage);
-
-            var title = new TextBlock
-            {
-                Text = "Codex 汉化增强工具",
-                Foreground = TextPrimary,
-                FontSize = 21,
-                FontWeight = FontWeights.SemiBold,
-                VerticalAlignment = VerticalAlignment.Center
-            };
-            Grid.SetColumn(title, 1);
-            grid.Children.Add(title);
-
-            var tools = new StackPanel
-            {
-                Orientation = Orientation.Horizontal,
-                VerticalAlignment = VerticalAlignment.Center
-            };
-            var sponsorText = new TextBlock
-            {
-                FontSize = 11,
-                Margin = new Thickness(0, 0, 15, 0),
-                VerticalAlignment = VerticalAlignment.Center
-            };
-            var sponsorLink = new Hyperlink(new Run("Kao La API 赞助支持"))
-            {
-                Foreground = TextSecondary,
-                TextDecorations = null,
-                Cursor = Cursors.Hand,
-                ToolTip = AppInfo.SponsorUrl
-            };
-            sponsorLink.Click += delegate { AppInfo.OpenUrl(AppInfo.SponsorUrl); };
-            sponsorLink.MouseEnter += delegate { sponsorLink.Foreground = Restart; };
-            sponsorLink.MouseLeave += delegate { sponsorLink.Foreground = TextSecondary; };
-            sponsorText.Inlines.Add(sponsorLink);
-            tools.Children.Add(sponsorText);
-            tools.Children.Add(new TextBlock
-            {
-                Text = "v" + AppInfo.Version,
-                Foreground = TextSecondary,
-                FontSize = 12,
-                Margin = new Thickness(0, 0, 9, 0),
-                VerticalAlignment = VerticalAlignment.Center
-            });
-            var aboutButton = BuildIconButton("\uE946", "关于与更新");
-            aboutButton.Click += delegate
-            {
-                new AboutWindow(this).ShowDialog();
-            };
-            tools.Children.Add(aboutButton);
-            Grid.SetColumn(tools, 2);
-            grid.Children.Add(tools);
-            return grid;
+            Closing += OnWorkspaceClosing;
+            Closed += delegate { stateTimer.Stop(); if (downloadCancellation != null) downloadCancellation.Cancel(); };
         }
 
         private UIElement BuildStatus()
@@ -355,6 +255,7 @@ namespace CodexZhLauncher
                 Style = style,
                 Template = CreatePrimaryButtonTemplate()
             };
+            button.SetBinding(System.Windows.Automation.AutomationProperties.NameProperty, new Binding("Text") { Source=primaryLabel });
             button.Click += async delegate
             {
                 if (currentInstall == null)
@@ -398,7 +299,7 @@ namespace CodexZhLauncher
 
         private ControlTemplate CreatePrimaryButtonTemplate(Brush hoverColor, Brush pressedColor)
         {
-            var template = CreateButtonTemplate(5);
+            var template = CreateButtonTemplate(10);
             var hover = new Trigger { Property = Button.IsMouseOverProperty, Value = true };
             hover.Setters.Add(new Setter(Border.BackgroundProperty, hoverColor, "ButtonBorder"));
             template.Triggers.Add(hover);
@@ -427,13 +328,21 @@ namespace CodexZhLauncher
             var border = new FrameworkElementFactory(typeof(Border));
             border.Name = "ButtonBorder";
             border.SetValue(Border.BackgroundProperty, new TemplateBindingExtension(Button.BackgroundProperty));
+            border.SetValue(Border.PaddingProperty, new TemplateBindingExtension(Button.PaddingProperty));
+            border.SetValue(Border.BorderBrushProperty, new TemplateBindingExtension(Button.BorderBrushProperty));
+            border.SetValue(Border.BorderThicknessProperty, new TemplateBindingExtension(Button.BorderThicknessProperty));
             border.SetValue(Border.CornerRadiusProperty, new CornerRadius(cornerRadius));
             var presenter = new FrameworkElementFactory(typeof(ContentPresenter));
-            presenter.SetValue(ContentPresenter.HorizontalAlignmentProperty, HorizontalAlignment.Center);
+            presenter.SetBinding(ContentPresenter.HorizontalAlignmentProperty, new Binding("HorizontalContentAlignment") { RelativeSource = RelativeSource.TemplatedParent });
             presenter.SetValue(ContentPresenter.VerticalAlignmentProperty, VerticalAlignment.Center);
             presenter.SetValue(ContentPresenter.RecognizesAccessKeyProperty, true);
             border.AppendChild(presenter);
             template.VisualTree = border;
+            var disabled = new Trigger { Property=Button.IsEnabledProperty, Value=false };
+            disabled.Setters.Add(new Setter(UIElement.OpacityProperty,0.45)); template.Triggers.Add(disabled);
+            var focused = new Trigger { Property=Button.IsKeyboardFocusedProperty, Value=true };
+            focused.Setters.Add(new Setter(Border.BorderBrushProperty,Brush("#C4B5FD"),"ButtonBorder"));
+            focused.Setters.Add(new Setter(Border.BorderThicknessProperty,new Thickness(1),"ButtonBorder"));template.Triggers.Add(focused);
             return template;
         }
 
@@ -444,7 +353,11 @@ namespace CodexZhLauncher
             SetBusy(true, "正在检测 Codex", "读取本机安装状态");
             try
             {
-                currentInstall = await CodexDiscovery.DetectAsync();
+                var detected = await CodexDiscovery.DetectAsync();
+                if (currentInstall == null || detected == null || !String.Equals(currentInstall.ExecutablePath, detected.ExecutablePath, StringComparison.OrdinalIgnoreCase))
+                    lastLaunchReport = null;
+                currentInstall = detected;
+                lastOperationError = null;
                 missingPollCount = 0;
                 if (currentInstall != null)
                 {
@@ -515,6 +428,16 @@ namespace CodexZhLauncher
             }
 
             var running = CodexDiscovery.CountRunningCodexProcesses(currentInstall);
+            if(lastLaunchReport != null && lastLaunchReport.SessionProcess != null && !CodexProcessManager.Scan(currentInstall).Verified.Exists(p => p.Id==lastLaunchReport.SessionProcess.Id && p.StartTimeUtcTicks==lastLaunchReport.SessionProcess.StartTimeUtcTicks))
+                lastLaunchReport=null;
+            if (!String.IsNullOrWhiteSpace(lastOperationError))
+            {
+                SetRestartButtonMode(running > 0);
+                SetStatus("上次操作未完成", lastOperationError, Danger);
+                primaryLabel.Text = running > 0 ? "关闭并汉化重启" : "重试汉化并启动";
+                primaryButton.IsEnabled = true;
+                return;
+            }
             if (running != lastRunningCount)
             {
                 if (running > 0)
@@ -534,7 +457,7 @@ namespace CodexZhLauncher
                 }
                 else if (lastLaunchReport != null)
                 {
-                    var statusTitle = lastLaunchReport.Complete
+                    var statusTitle = lastLaunchLocale == "en-US" ? (lastLaunchReport.Complete ? "英文版已启动" : "英文设置待确认") : lastLaunchReport.Complete
                         ? "汉化已完成，Codex 正在运行"
                         : lastLaunchReport.LocaleApplied
                             ? "界面已汉化，菜单仍有遗漏"
@@ -567,6 +490,8 @@ namespace CodexZhLauncher
         private async Task LaunchChineseAsync()
         {
             if (busy || currentInstall == null) return;
+            lastOperationError = null;
+            lastLaunchLocale = "zh-CN";
             shutdownFailureDetail = null;
             lastLaunchReport = null;
             SetBusy(true, "正在汉化并启动", "请稍候，进度会显示在下方日志中");
@@ -586,9 +511,15 @@ namespace CodexZhLauncher
                 if (!String.IsNullOrWhiteSpace(report.MenuDetail))
                     AppendLog("菜单详情：" + report.MenuDetail, TextSecondary);
                 AppendLog(report.Message, report.Complete ? Accent : Warning);
+                if (preferences.CodexTheme != "default")
+                {
+                    try { AppendLog("启动配色：" + await LocalizationRuntime.ApplyThemeAsync(report, preferences.CodexTheme, preferences.FontSize), TextSecondary); }
+                    catch (Exception themeError) { AppendLog("启动配色未应用：" + themeError.Message, Warning); }
+                }
             }
             catch (Exception ex)
             {
+                lastOperationError = ex.Message;
                 SetStatus("启动失败", ex.Message, Danger);
                 AppendLog("启动失败：" + ex.Message, Danger);
                 AppLog.Write("launch.ui.failed " + ex);
@@ -627,6 +558,7 @@ namespace CodexZhLauncher
             shutdownFailureDetail = null;
             lastLaunchReport = null;
             var restart = false;
+            lastOperationError = null;
             SetBusy(true, "正在关闭 Codex", "先正常退出，超时后再强制终止");
             AppendLog("用户已确认关闭并汉化重启。", Warning);
             AppLog.Write("ui.restart.confirmed");
@@ -683,6 +615,7 @@ namespace CodexZhLauncher
 
         private async Task SelectPortableAsync()
         {
+            if (busy) return;
             var dialog = new OpenFileDialog
             {
                 Title = "选择 Codex Desktop",
@@ -695,6 +628,9 @@ namespace CodexZhLauncher
             try
             {
                 currentInstall = CodexDiscovery.UsePortableExecutable(dialog.FileName);
+                lastLaunchReport = null;
+                lastOperationError = null;
+                shutdownFailureDetail = null;
                 AppendLog("已选择便携版：" + dialog.FileName, Accent);
                 UpdatePresentation();
             }
@@ -724,11 +660,12 @@ namespace CodexZhLauncher
 
         private async Task CheckForUpdatesOnStartupAsync()
         {
+            if (!preferences.AutoCheck) return;
             try
             {
                 var result = await UpdateChecker.CheckAsync(AppInfo.Version);
                 AppLog.Write("update.check " + result.Message);
-                if (!result.UpdateAvailable || updatePromptShown || !IsVisible) return;
+                if (!result.UpdateAvailable || updatePromptShown || !IsVisible || busy) return;
                 updatePromptShown = true;
                 AppendLog(result.Message + "，可从 GitHub Releases 下载。", Restart);
                 var choice = MessageBox.Show(
@@ -745,8 +682,9 @@ namespace CodexZhLauncher
             }
         }
 
-        private async Task InstallUpdateAsync(UpdateCheckResult update)
+        internal async Task InstallUpdateAsync(UpdateCheckResult update)
         {
+            if(busy || update == null) return;
             try
             {
                 SetBusy(true, "正在更新工具", "正在下载并校验 v" + update.LatestVersion);
@@ -759,6 +697,7 @@ namespace CodexZhLauncher
                 if (started)
                 {
                     AppLog.Write("update.apply.start version=" + update.LatestVersion);
+                    allowsUpdateExit = true;
                     Application.Current.Shutdown();
                 }
             }
@@ -782,6 +721,10 @@ namespace CodexZhLauncher
             busy = value;
             progress.Opacity = value ? 1 : 0;
             primaryButton.IsEnabled = !value;
+            if (workspaceActions != null) workspaceActions.IsEnabled = !value;
+            if (downloadOptions != null) downloadOptions.IsEnabled = !value;
+            if (launchOptions != null) launchOptions.IsEnabled = !value;
+            if (themeOptions != null) themeOptions.IsEnabled = !value;
             if (value) primaryLabel.Text = "正在处理";
             if (title != null) SetStatus(title, detail ?? "", TextSecondary);
         }
@@ -790,10 +733,7 @@ namespace CodexZhLauncher
         {
             if (primaryButton == null || restartButtonMode == value) return;
             restartButtonMode = value;
-            primaryButton.Background = value ? Restart : Accent;
-            primaryButton.Template = value
-                ? CreatePrimaryButtonTemplate(RestartHover, RestartPressed)
-                : CreatePrimaryButtonTemplate();
+            UpdatePrimaryAccent();
         }
 
         private void SetStatus(string title, string detail, Brush color)
@@ -802,6 +742,7 @@ namespace CodexZhLauncher
             detailText.Text = detail ?? "";
             detailText.ToolTip = String.IsNullOrWhiteSpace(detail) ? null : detail;
             statusDot.Fill = color;
+            RefreshWorkspaceStatus(title);
         }
 
         private void AppendLog(string message, Brush color)
@@ -811,12 +752,8 @@ namespace CodexZhLauncher
                 Dispatcher.BeginInvoke(new Action<string, Brush>(AppendLog), message, color);
                 return;
             }
-            if (logBox == null || String.IsNullOrWhiteSpace(message)) return;
-            var paragraph = new Paragraph { Margin = new Thickness(0, 0, 0, 5) };
-            paragraph.Inlines.Add(new Run(DateTime.Now.ToString("HH:mm:ss") + "  ") { Foreground = TextSecondary });
-            paragraph.Inlines.Add(new Run(message) { Foreground = color });
-            logBox.Document.Blocks.Add(paragraph);
-            logBox.ScrollToEnd();
+            if (Dispatcher.HasShutdownStarted || String.IsNullOrWhiteSpace(message)) return;
+            RecordWorkspaceLog(message, color);
         }
 
         private void EnableDarkTitleBar()

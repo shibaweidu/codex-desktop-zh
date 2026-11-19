@@ -8,8 +8,8 @@ using System.Windows;
 [assembly: System.Reflection.AssemblyCompany("Codex Localization Enhancer Community")]
 [assembly: System.Reflection.AssemblyProduct("Codex 汉化增强工具")]
 [assembly: System.Reflection.AssemblyCopyright("Copyright 2026")]
-[assembly: System.Reflection.AssemblyVersion("0.7.7.0")]
-[assembly: System.Reflection.AssemblyFileVersion("0.7.7.0")]
+[assembly: System.Reflection.AssemblyVersion("0.8.0.0")]
+[assembly: System.Reflection.AssemblyFileVersion("0.8.0.0")]
 
 namespace CodexZhLauncher
 {
@@ -62,6 +62,8 @@ namespace CodexZhLauncher
                 Output(LocalizationScripts.SelfTest());
                 Output(UpdateChecker.SelfTest());
                 Output(UpdateInstaller.SelfTest());
+                if(ThemePreset.BuildScript("default",14).Contains("__THEME_JSON__"))throw new InvalidOperationException("主题资源自检失败。");
+                Output("theme-script=ok");
                 return;
             }
 

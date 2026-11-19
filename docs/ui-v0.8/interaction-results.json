@@ -1,0 +1,142 @@
+{
+  "failed": 0,
+  "passed": 34,
+  "results": [
+    {
+      "name": "赞助入口位于左侧栏而非顶部",
+      "passed": true
+    },
+    {
+      "name": "苹果质感样式层已加载",
+      "passed": true
+    },
+    {
+      "name": "导航 overview",
+      "passed": true
+    },
+    {
+      "name": "导航 downloads",
+      "passed": true
+    },
+    {
+      "name": "导航 localization",
+      "passed": true
+    },
+    {
+      "name": "导航 themes",
+      "passed": true
+    },
+    {
+      "name": "导航 diagnostics",
+      "passed": true
+    },
+    {
+      "name": "Windows 显示版本与包版本分开",
+      "passed": true
+    },
+    {
+      "name": "Windows 官方指向 Store",
+      "passed": true
+    },
+    {
+      "name": "macOS ARM64 官方 DMG 与独立版本",
+      "passed": true
+    },
+    {
+      "name": "macOS Intel 官方 DMG",
+      "passed": true
+    },
+    {
+      "name": "镜像标明第三方来源",
+      "passed": true
+    },
+    {
+      "name": "下载前显示演示确认",
+      "passed": true
+    },
+    {
+      "name": "取消确认不启动进度",
+      "passed": true
+    },
+    {
+      "name": "下载演示锁定选择器",
+      "passed": true
+    },
+    {
+      "name": "可取消获取演示",
+      "passed": true
+    },
+    {
+      "name": "获取完成不声称实际安装成功",
+      "passed": true
+    },
+    {
+      "name": "取消与完成后选择器均可操作",
+      "passed": true
+    },
+    {
+      "name": "选择主题只预览",
+      "passed": true
+    },
+    {
+      "name": "字体滑块更新预览",
+      "passed": true
+    },
+    {
+      "name": "Codex 演示偏好保存",
+      "passed": true
+    },
+    {
+      "name": "Codex 和工具外观分别保存",
+      "passed": true
+    },
+    {
+      "name": "工具配色应用到原型",
+      "passed": true
+    },
+    {
+      "name": "工具配色恢复默认",
+      "passed": true
+    },
+    {
+      "name": "工具恢复不改变 Codex 偏好",
+      "passed": true
+    },
+    {
+      "name": "首次演示启动后可重启",
+      "passed": true
+    },
+    {
+      "name": "运行后必须确认且提醒输入丢失",
+      "passed": true
+    },
+    {
+      "name": "取消后状态不变且焦点返回",
+      "passed": true
+    },
+    {
+      "name": "确认重启仅记录模拟流程",
+      "passed": true
+    },
+    {
+      "name": "日志搜索空态",
+      "passed": true
+    },
+    {
+      "name": "日志级别筛选",
+      "passed": true
+    },
+    {
+      "name": "诊断不声称接入真实应用",
+      "passed": true
+    },
+    {
+      "name": "关于区分预览和发行版本",
+      "passed": true
+    },
+    {
+      "name": "对外链接安全属性",
+      "passed": true
+    }
+  ]
+}

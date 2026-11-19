@@ -1,7 +1,8 @@
 [CmdletBinding()]
 param(
     [ValidateSet('Release', 'Debug')]
-    [string]$Configuration = 'Release'
+    [string]$Configuration = 'Release',
+    [string]$OutputDirectory = 'dist'
 )
 
 $ErrorActionPreference = 'Stop'
@@ -9,7 +10,7 @@ $projectRoot = $PSScriptRoot
 $sourceDir = Join-Path $projectRoot 'src'
 $sharedDir = Join-Path $projectRoot 'shared'
 $manifestFile = Join-Path $sourceDir 'app.manifest'
-$outputDir = Join-Path $projectRoot 'dist'
+$outputDir = if ([System.IO.Path]::IsPathRooted($OutputDirectory)) { $OutputDirectory } else { Join-Path $projectRoot $OutputDirectory }
 $intermediateDir = Join-Path $projectRoot 'obj'
 $outputFile = Join-Path $outputDir 'Codex-Zh-Launcher-Windows-x64.exe'
 $iconFile = Join-Path $intermediateDir 'AppIcon.ico'
@@ -50,6 +51,7 @@ foreach ($reference in $references) {
 }
 
 $sharedResources = @(
+    @{ Path = (Join-Path $sharedDir 'theme-script.js'); Name = 'CodexZhLauncher.Shared.theme-script.js' },
     @{ Path = (Join-Path $sharedDir 'i18n-bootstrap.js'); Name = 'CodexZhLauncher.Shared.i18n-bootstrap.js' },
     @{ Path = (Join-Path $sharedDir 'locale-script.js'); Name = 'CodexZhLauncher.Shared.locale-script.js' },
     @{ Path = (Join-Path $sharedDir 'menu-script.js'); Name = 'CodexZhLauncher.Shared.menu-script.js' },

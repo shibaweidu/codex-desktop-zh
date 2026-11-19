@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <title>Codex 汉化增强工具 · 界面设计原型</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="apple-materials.css">
+  <script defer src="app.js"></script>
+</head>
+<body>
+  <a class="skip-link" href="#main">跳到主要内容</a>
+  <div class="window">
+    <header class="titlebar">
+      <span class="title-app"><span class="brand-mini" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m8 6-6 6 6 6m8-12 6 6-6 6M14 3l-4 18"/></svg></span> Codex 汉化增强工具</span>
+      <span class="prototype-label">交互原型 <span>· 本机状态为示例</span></span>
+      <div class="window-actions">
+        <button data-window="最小化" aria-label="最小化（原型演示）"><svg viewBox="0 0 24 24"><path d="M6 12h12"/></svg></button>
+        <button data-window="最大化" aria-label="最大化（原型演示）"><svg viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="1"/></svg></button>
+        <button data-window="关闭" aria-label="关闭（原型演示）"><svg viewBox="0 0 24 24"><path d="m7 7 10 10M17 7 7 17"/></svg></button>
+      </div>
+    </header>
+    <div class="app-layout">
+      <aside class="sidebar" aria-label="应用导航与设置">
+        <a class="brand" href="#overview" aria-label="Codex 增强工具首页"><span class="brand-mark"><svg viewBox="0 0 48 48"><path d="m18 13-11 11 11 11m12-22 11 11-11 11m-3-27-6 32"/></svg></span><span>Codex<span class="brand-sub">汉化增强工具</span></span></a>
+        <nav aria-label="主要导航">
+          <button class="nav-item" data-page="overview"><span data-icon="grid"></span>概览</button>
+          <button class="nav-item" data-page="downloads"><span data-icon="download"></span>下载 Codex</button>
+          <button class="nav-item" data-page="localization"><span data-icon="language"></span>界面汉化</button>
+          <button class="nav-item" data-page="themes"><span data-icon="palette"></span>主题外观<span class="nav-dot"></span></button>
+          <button class="nav-item" data-page="diagnostics"><span data-icon="terminal"></span>日志诊断</button>
+        </nav>
+        <a href="https://www.appkaola.com" target="_blank" rel="noopener noreferrer" class="sponsor" aria-label="本项目由 Kao La API 支持赞助，访问 appkaola.com（新窗口）">
+          <span class="sponsor-mark" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M6 5v14m12-14-8 7 8 7"/></svg></span>
+          <span class="sponsor-copy"><small>项目支持赞助</small><strong>Kao La API</strong><span class="sponsor-domain">appkaola.com</span></span>
+          <svg class="sponsor-arrow" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 17 17 7M7 7h10v10"/></svg>
+        </a>
+        <div class="sidebar-bottom">
+          <div class="local-status"><span class="status-dot"></span><span>已发现 Codex<small>Windows x64 · 示例</small></span></div>
+          <button class="nav-item" data-action="settings"><span data-icon="settings"></span>设置与关于</button>
+          <div class="sidebar-version"><span>设计预览</span><span>v0.8</span></div>
+        </div>
+      </aside>
+      <div class="workspace">
+        <div class="workspace-top" role="region" aria-label="页面位置"><span id="breadcrumb">工作台 / 概览</span><button class="mobile-about" data-action="settings" aria-label="设置与关于"><span data-icon="settings"></span></button></div>
+        <main id="main" tabindex="-1"></main>
+        <footer class="statusbar"><span><span class="status-dot"></span>本地演示，不操作真实 Codex</span><button data-page="diagnostics">查看操作记录 <span aria-hidden="true">↗</span></button></footer>
+      </div>
+    </div>
+  </div>
+  <dialog id="modal" aria-labelledby="dialog-title"><div id="dialog-content"></div></dialog>
+  <div id="toast" role="status" aria-live="polite"></div>
+</body>
+</html>
