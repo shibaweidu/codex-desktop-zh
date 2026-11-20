@@ -59,10 +59,13 @@ namespace CodexZhLauncher
             return CodexProcessManager.Scan(install).TotalPotentialCount;
         }
 
-        public static async Task<CodexInstall> DetectStorePackageAsync()
+        public static async Task<CodexInstall> DetectStorePackageAsync(bool requireHealthy = false)
         {
             var command =
-                "$p = Get-AppxPackage -Name '" + PackageName + "' | Sort-Object Version -Descending | Select-Object -First 1; " +
+                "$ErrorActionPreference='Stop'; $p = Get-AppxPackage -Name '" + PackageName +
+                "' | Where-Object { $_.PackageFamilyName -eq 'OpenAI.Codex_2p2nqsd0c76g0'" +
+                (requireHealthy ? " -and $_.Status -eq 'Ok'" : "") +
+                " } | Sort-Object Version -Descending | Select-Object -First 1; " +
                 "if ($null -ne $p) { [pscustomobject]@{ Version=$p.Version.ToString(); PackageFamilyName=$p.PackageFamilyName; InstallLocation=$p.InstallLocation } | ConvertTo-Json -Compress }";
             var result = await ProcessRunner.RunAsync(
                 "powershell.exe",

@@ -6,7 +6,9 @@ $testDirectory=Join-Path ([IO.Path]::GetTempPath()) ('CodexMsixVerification-'+[G
 New-Item -ItemType Directory -Path $testDirectory | Out-Null
 $package=Join-Path $testDirectory "Codex publisher's package.msix"
 $verifier=Join-Path $testDirectory 'verify.ps1'
+$installer=Join-Path $testDirectory 'install.ps1'
 $fixtureTrust=[PSCustomObject]@{Status='Valid';Subject='CN=50BDFD77-8903-4850-9FFE-6E8522F64D5B';NullCertificate=$false}
+$deployment=[PSCustomObject]@{Count=0;Version='26.1.8.0';Result='success'}
 # Only the OS trust result is injected. The generated production verifier checks
 # real fixture bytes, hashes, ZIP manifests and the exact signer identity.
 function Get-AuthenticodeSignature {
@@ -38,6 +40,17 @@ function Expect-Rejection {
     if(-not $rejected){throw "Expected rejection: $Name"}
     Write-Host "PASS $Name"
 }
+function Get-AppxPackage {
+    param($Name)
+    if($Name -ne 'OpenAI.Codex'){throw 'Unexpected package query'}
+    [PSCustomObject]@{Version=[version]$deployment.Version;Status='Ok';PackageFamilyName='OpenAI.Codex_2p2nqsd0c76g0';PackageFullName="OpenAI.Codex_$($deployment.Version)_x64__2p2nqsd0c76g0"}
+}
+function Add-AppxPackage {
+    param($LiteralPath)
+    if($LiteralPath -ne $package){throw 'Unexpected installer path'}
+    $deployment.Count++
+    if($deployment.Result -eq 'success'){$deployment.Version='26.1.9.0'}
+}
 try {
     New-Package
     $output=& $verifier
@@ -63,6 +76,25 @@ try {
     Expect-Rejection 'SHA-256 mismatch' 'reject_changed_cached_bytes'
     [IO.File]::WriteAllBytes($package,[byte[]]@(1,2,3))
     Expect-Rejection 'size mismatch' 'reject_changed_cached_size'
+    New-Package
+    $null=& $TestExecutable '--write-installer' $installer $package '26.1.9.0' 'x64'
+    if($LASTEXITCODE -ne 0){throw 'Cannot generate MSIX installer'}
+    $output=& $installer
+    if($deployment.Count -ne 1 -or -not ($output -match 'MSIX_DEPLOY_REGISTERED')){throw 'Registration was not confirmed'}
+    Write-Host 'PASS installed_target_registration_confirmed'
+    $deployment.Version='26.1.8.0'
+    $deployment.Result='not-registered'
+    try {
+        & $installer | Out-Null
+        throw 'Expected missing registration to fail'
+    } catch {
+        if($_.Exception.Message -notlike '*not registered a healthy target package*'){throw}
+    }
+    Write-Host 'PASS success_exit_without_registration_rejected'
+    $deployment.Version='26.1.10.0'
+    $output=& $installer
+    if($deployment.Count -ne 2 -or -not ($output -match 'already current or newer')){throw 'Newer package should not deploy'}
+    Write-Host 'PASS concurrent_newer_registration_skips_deployment'
 }finally{
     # Explicitly scoped disposable fixtures only; no real app is installed or closed.
     Remove-Item -LiteralPath $testDirectory -Recurse -Force

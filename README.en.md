@@ -4,7 +4,7 @@ English | [简体中文](README.md)
 
 ![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS-5B8DEF)
 ![Architecture](https://img.shields.io/badge/architecture-x64%20%7C%20arm64-6D7280)
-![Version](https://img.shields.io/badge/version-v0.8.1-C4B5FD)
+![Version](https://img.shields.io/badge/version-v0.8.2-C4B5FD)
 ![License](https://img.shields.io/badge/license-MIT-31B77A)
 
 **Codex Desktop Chinese Localization Enhancer** is a Windows and macOS launcher for enabling the Chinese UI and translating native Electron menus in Codex Desktop. It supports Microsoft Store, portable, and macOS App Bundle installations, verified process shutdown, and automatic restart in Chinese mode.
@@ -13,11 +13,13 @@ The tool does not unpack or replace `app.asar`, modify the Microsoft Store insta
 
 ## v0.8 development preview
 
-Version 0.8.1 fixes Windows rejecting valid Codex Store signatures because the signer subject does not contain Microsoft. It checks the trusted signature, exact publisher identity and SHA-256 again before installation.
+Version 0.8.2 adds direct mirror downloads, resume support, and package cache reuse to the Windows Codex updater. The updater checks the current user's registered package after deployment and shows Windows errors when deployment fails.
 
 Version 0.8.0 adds a native WPF / SwiftUI five-page workspace for Overview, Codex updates, Localization, Appearance, and Diagnostics. Windows downloads and verifies an update before user confirmation; macOS additionally requires the release workflow to pass both architecture builds and tests. Check GitHub Releases and CI for publication status.
 
-Codex client updates use the Wangnov community mirror as the sole manifest and package source on both platforms. The launcher detects the local version and CPU architecture, skips downloads when current, and automatically downloads and verifies an available update. Windows compares MSIX package versions; macOS compares the app version and then the build number when the app version is unchanged. Windows confirms before AppX/UAC installation; macOS confirms before validating Apple signing, Team ID and architecture, then replacing and restarting. Updating Codex under the system Applications directory may request macOS administrator authorization; cancellation or verification failure leaves the existing app in place. A running Codex process is never force-killed, and portable Windows builds are not overwritten automatically. Six project-owned runtime color presets are reversible and scoped to a launcher-created, process-verified session. They do not change application files, native settings, menus, or syntax colors; a full page refresh can remove the runtime style.
+Codex client updates use the Wangnov community mirror on both platforms. The launcher detects the local version and CPU architecture, skips downloads when current, and downloads and verifies an available update. Windows compares MSIX package versions, resumes interrupted downloads, and reuses verified packages for the same version. After confirmation, Windows deploys with AppX and checks the registered version for the current account. macOS compares the app version and build number, verifies Apple signing, Team ID and architecture, then replaces and restarts Codex after confirmation. The system Applications directory may require macOS administrator authorization. Windows installation requires closing Codex first. Update portable Windows builds through their original installation channel.
+
+Six reversible runtime color presets apply to launcher-created, process-verified sessions. A full page refresh can remove the runtime style.
 
 Windows isolated service and browser-fixture tests have run locally. The new macOS implementation and tests still require a Mac/CI build and Apple Silicon/Intel manual acceptance. See [native verification](docs/NATIVE-v0.8-VERIFICATION.md).
 

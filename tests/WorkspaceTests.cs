@@ -13,11 +13,12 @@ internal static class WorkspaceTests {
     private static void Check(bool condition, string name) { if(!condition)throw new Exception(name);count++;Console.WriteLine("PASS "+name); }
     private static void Reject(Action action,string name) {try{action();}catch(Exception){Check(true,name);return;}throw new Exception("Expected rejection: "+name);}
     public static int Main(string[] args) {try{Run();
-        if(args.Length==5&&args[0]=="--write-verifier") {
+        if(args.Length==5&&(args[0]=="--write-verifier" || args[0]=="--write-installer")) {
             var package=args[2];string sha;
             using(var input=File.OpenRead(package))using(var algorithm=SHA256.Create())sha=BitConverter.ToString(algorithm.ComputeHash(input)).Replace("-","");
             var verificationPlan=new CodexDownloadPlan{Platform="windows",Architecture=args[4],PackageVersion=args[3],PackageFamilyName="OpenAI.Codex_2p2nqsd0c76g0",Length=new FileInfo(package).Length,Sha256=sha};
-            File.WriteAllText(args[1],CodexDownloads.BuildWindowsVerificationScript(verificationPlan,package),new UTF8Encoding(true));return 0;
+            var script=args[0]=="--write-installer" ? CodexDownloads.BuildWindowsInstallScript(verificationPlan,package) : CodexDownloads.BuildWindowsVerificationScript(verificationPlan,package);
+            File.WriteAllText(args[1],script,new UTF8Encoding(true));return 0;
         }
         if(args.Length>0) {
             var live=File.ReadAllText(args[0]);
@@ -47,7 +48,7 @@ internal static class WorkspaceTests {
         var installScript=CodexDownloads.BuildWindowsInstallScript(plan,"C:\\Downloads\\Codex.msix");
         generatedInstallScript=installScript;
         Check(installScript.Contains("OpenAI.Codex")&&installScript.Contains("ProcessorArchitecture")&&installScript.Contains("Add-AppxPackage"),"windows_install_identity_validation");
-        Check(installScript.Contains("ForceUpdateFromAnyVersion")&&installScript.Contains("already current or newer"),"windows_update_never_downgrades");
+        Check(!installScript.Contains("ForceUpdateFromAnyVersion")&&installScript.Contains("already current or newer"),"windows_update_never_downgrades");
         Check(installScript.Contains("Get-AuthenticodeSignature")&&installScript.IndexOf("Get-AuthenticodeSignature")<installScript.IndexOf("Add-AppxPackage"),"windows_deployment_rechecks_signature");
         Reject(()=>CodexDownloads.BuildWindowsVerificationScript(new CodexDownloadPlan{Platform="windows",Architecture="x86"},"test.msix"),"invalid_verification_plan");
         var macPlan=CodexDownloads.Parse(json(),"macos","arm64");
@@ -90,5 +91,6 @@ internal static class WorkspaceTests {
         foreach(var preset in ThemePreset.All)Check(!ThemePreset.BuildScript(preset.Id,14).Contains("__THEME_JSON__"),"theme_resource_"+preset.Id);
         Reject(()=>ThemePreset.BuildScript("bad",14),"invalid_theme_id");
         Reject(()=>ThemePreset.BuildScript("violet",30),"invalid_theme_font");
+        DownloadResumeTests.Run(Check);
     }
 }}

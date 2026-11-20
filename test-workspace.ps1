@@ -10,7 +10,7 @@ foreach($name in @('System.dll','System.Core.dll','System.Net.Http.dll','System.
     $compilerArgs += "/reference:$(Join-Path $framework $name)"
 }
 $compilerArgs += "/resource:$root\shared\theme-script.js,CodexZhLauncher.Shared.theme-script.js"
-foreach($file in @('src\CodexDownloads.cs','src\WorkspaceSettings.cs','src\AppLog.cs','tests\WorkspaceTests.cs')) { $compilerArgs += (Join-Path $root $file) }
+foreach($file in @('src\CodexDownloads.cs','src\WorkspaceSettings.cs','src\AppLog.cs','tests\WorkspaceTests.cs','tests\DownloadResumeTests.cs')) { $compilerArgs += (Join-Path $root $file) }
 & (Join-Path $framework 'csc.exe') $compilerArgs
 if($LASTEXITCODE -ne 0) { throw 'Workspace test compilation failed.' }
 $scriptPath=Join-Path $out 'CodexInstallScript.ps1'

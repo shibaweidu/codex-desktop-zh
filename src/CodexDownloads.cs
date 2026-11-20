@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Net;
 using System.Net.Http;
+using System.Net.Http.Headers;
 using System.Security.Cryptography;
 using System.Threading;
 using System.Threading.Tasks;
@@ -24,24 +25,25 @@ namespace CodexZhLauncher
         public static async Task<CodexDownloadPlan> ResolveAsync(string platform, string architecture, CancellationToken token)
         {
             ServicePointManager.SecurityProtocol |= SecurityProtocolType.Tls12;
-            using (var client = new HttpClient { Timeout = TimeSpan.FromSeconds(30) })
-            using (var response = await client.GetAsync(ManifestUrl, HttpCompletionOption.ResponseHeadersRead, token))
+            using (var client = new HttpClient(new HttpClientHandler { AllowAutoRedirect = false }))
+            using (var timeout = CancellationTokenSource.CreateLinkedTokenSource(token))
             {
-                response.EnsureSuccessStatusCode();
-                var manifestUri=response.RequestMessage.RequestUri;
-                if(manifestUri==null||manifestUri.Scheme!="https"||(manifestUri.Host!="codexapp.agentsmirror.com"&&manifestUri.Host!="codexapp-r2.agentsmirror.com"&&manifestUri.Host!="codexapp-s3.agentsmirror.com"))
-                    throw new InvalidDataException("版本清单重定向到了未许可的来源。");
-                using (var input = await response.Content.ReadAsStreamAsync())
-                using (var output = new MemoryStream())
+                timeout.CancelAfter(TimeSpan.FromSeconds(30));
+                using (var response = await GetMirrorResponseAsync(client, new Uri(ManifestUrl), 0, timeout.Token).ConfigureAwait(false))
                 {
-                    var buffer = new byte[8192]; int count;
-                    while ((count = await input.ReadAsync(buffer, 0, buffer.Length, token)) > 0)
+                    response.EnsureSuccessStatusCode();
+                    using (var input = await response.Content.ReadAsStreamAsync().ConfigureAwait(false))
+                    using (var output = new MemoryStream())
                     {
-                        if (output.Length + count > 4 * 1024 * 1024) throw new InvalidDataException("下载清单过大。");
-                        output.Write(buffer, 0, count);
+                        var buffer = new byte[8192]; int count;
+                        while ((count = await ReadWithDeadlineAsync(input, buffer, timeout.Token).ConfigureAwait(false)) > 0)
+                        {
+                            if (output.Length + count > 4 * 1024 * 1024) throw new InvalidDataException("下载清单过大。");
+                            output.Write(buffer, 0, count);
+                        }
+                        timeout.Token.ThrowIfCancellationRequested();
+                        return Parse(System.Text.Encoding.UTF8.GetString(output.ToArray()), platform, architecture);
                     }
-                    token.ThrowIfCancellationRequested();
-                    return Parse(System.Text.Encoding.UTF8.GetString(output.ToArray()), platform, architecture);
                 }
             }
         }
@@ -113,7 +115,7 @@ namespace CodexZhLauncher
         internal static async Task VerifyFileAsync(string file, CodexDownloadPlan plan, CancellationToken token)
         {
             using (var input = new FileStream(file, FileMode.Open, FileAccess.Read, FileShare.Read, 81920, true))
-                await CopyVerifiedAsync(input, Stream.Null, plan.Length, plan.Sha256, null, token);
+                await CopyVerifiedAsync(input, Stream.Null, plan.Length, plan.Sha256, null, token).ConfigureAwait(false);
         }
         internal static string BuildWindowsVerificationScript(CodexDownloadPlan plan, string file)
         {
@@ -141,35 +143,215 @@ namespace CodexZhLauncher
         internal static string BuildWindowsInstallScript(CodexDownloadPlan plan, string file)
         {
             return BuildWindowsVerificationScript(plan,file)+
-                "$cur=Get-AppxPackage -Name 'OpenAI.Codex' | Select-Object -First 1; if($cur -and [version]$cur.Version -ge [version]"+PowerShellLiteral(plan.PackageVersion)+"){throw 'Codex is already current or newer'}; Add-AppxPackage -Path "+PowerShellLiteral(file)+" -ForceUpdateFromAnyVersion; $p=Get-AppxPackage -Name 'OpenAI.Codex' | Where-Object {$_.Version.ToString() -eq "+PowerShellLiteral(plan.PackageVersion)+" -and $_.PackageFamilyName -eq "+PowerShellLiteral(plan.PackageFamilyName)+"}; if($null -eq $p){throw 'Installed package identity/version mismatch'}";
+                "$family="+PowerShellLiteral(plan.PackageFamilyName)+"; $target=[version]"+PowerShellLiteral(plan.PackageVersion)+"; "+
+                "function Get-CurrentCodex { Get-AppxPackage -Name 'OpenAI.Codex' | Where-Object {$_.PackageFamilyName -eq $family} | Sort-Object Version -Descending | Select-Object -First 1 }; "+
+                "$cur=Get-CurrentCodex; if($cur -and [version]$cur.Version -ge $target){Write-Output 'Codex is already current or newer'; exit 0}; "+
+                "$cmd=Get-Command Add-AppxPackage; $deploy=@{}; "+
+                "if($cmd.Parameters.ContainsKey('LiteralPath')){$deploy['LiteralPath']=$file}else{$deploy['Path']=$file}; "+
+                "Write-Output 'MSIX_DEPLOY_START'; Add-AppxPackage @deploy; "+
+                "$p=Get-CurrentCodex; if($null -eq $p -or [version]$p.Version -lt $target -or $p.Status -ne 'Ok'){throw 'Windows has not registered a healthy target package'}; "+
+                "Write-Output ('MSIX_DEPLOY_REGISTERED '+$p.PackageFullName)";
         }
         private static string PowerShellLiteral(string value){return "'"+(value??String.Empty).Replace("'","''")+"'";}
-        public static async Task<string> DownloadAsync(CodexDownloadPlan plan, string directory, IProgress<int> progress, CancellationToken token)
+        internal static string CacheFileName(CodexDownloadPlan plan)
         {
-            if (plan == null || !IsHash(plan.Sha256) || plan.Url.Scheme != "https") throw new InvalidDataException("无效的下载任务。");
-            Directory.CreateDirectory(directory);
-            var target = Path.Combine(directory, Guid.NewGuid().ToString("N") + "-" + plan.FileName);
-            var temp = target + ".partial";
-            try
+            if (plan == null || !IsHash(plan.Sha256) || String.IsNullOrEmpty(plan.FileName) ||
+                !System.Text.RegularExpressions.Regex.IsMatch(plan.FileName, @"^Codex-[0-9A-Za-z.\-]+\.msix$"))
+                throw new InvalidDataException("无效的下载任务。");
+            return plan.Sha256.ToLowerInvariant() + "-" + plan.FileName;
+        }
+
+        internal static bool IsMirrorAddress(Uri uri)
+        {
+            return uri != null && uri.IsAbsoluteUri && uri.Scheme == "https" && uri.IsDefaultPort &&
+                String.IsNullOrEmpty(uri.UserInfo) && (uri.Host == "codexapp.agentsmirror.com" ||
+                uri.Host == "codexapp-r2.agentsmirror.com" || uri.Host == "codexapp-s3.agentsmirror.com");
+        }
+
+        private static async Task<HttpResponseMessage> GetMirrorResponseAsync(HttpClient client, Uri uri, long offset, CancellationToken token)
+        {
+            for (var redirects = 0; redirects <= 4; redirects++)
             {
-                using (var client = new HttpClient { Timeout = Timeout.InfiniteTimeSpan })
-                using (var response = await client.GetAsync(plan.Url, HttpCompletionOption.ResponseHeadersRead, token))
+                if (!IsMirrorAddress(uri)) throw new InvalidDataException("拒绝社区镜像域名之外的下载重定向。");
+                using (var request = new HttpRequestMessage(HttpMethod.Get, uri))
                 {
-                    response.EnsureSuccessStatusCode();
-                    if (response.RequestMessage.RequestUri.Scheme != "https" ||
-                        (response.RequestMessage.RequestUri.Host!="codexapp.agentsmirror.com" && response.RequestMessage.RequestUri.Host!="codexapp-r2.agentsmirror.com" && response.RequestMessage.RequestUri.Host!="codexapp-s3.agentsmirror.com"))
-                        throw new InvalidDataException("拒绝社区镜像域名之外的下载重定向。");
-                    if (response.Content.Headers.ContentLength.HasValue && response.Content.Headers.ContentLength.Value != plan.Length)
-                        throw new InvalidDataException("安装包已变化，请重新读取下载清单。");
-                    using (var input = await response.Content.ReadAsStreamAsync())
-                    using (var output = new FileStream(temp, FileMode.CreateNew, FileAccess.Write, FileShare.None, 81920, true))
-                    { await CopyVerifiedAsync(input, output, plan.Length, plan.Sha256, progress, token); }
+                    request.Headers.TryAddWithoutValidation("Accept-Encoding", "identity");
+                    if (offset > 0) request.Headers.Range = new RangeHeaderValue(offset, null);
+                    var response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, token).ConfigureAwait(false);
+                    var status = (int)response.StatusCode;
+                    if (status != 301 && status != 302 && status != 303 && status != 307 && status != 308)
+                        return response;
+                    var location = response.Headers.Location;
+                    response.Dispose();
+                    if (location == null) throw new InvalidDataException("镜像未提供重定向地址。");
+                    uri = new Uri(uri, location);
                 }
-                token.ThrowIfCancellationRequested();
-                File.Move(temp, target);
-                return target;
             }
-            finally { if (File.Exists(temp)) File.Delete(temp); }
+            throw new InvalidDataException("镜像重定向次数过多。");
+        }
+
+        private static async Task<int> ReadWithDeadlineAsync(Stream stream, byte[] buffer, CancellationToken token)
+        {
+            using (var timeout = CancellationTokenSource.CreateLinkedTokenSource(token))
+            {
+                timeout.CancelAfter(TimeSpan.FromSeconds(45));
+                using (timeout.Token.Register(() => { try { stream.Dispose(); } catch (IOException) {} }))
+                {
+                    try
+                    {
+                        var count = await stream.ReadAsync(buffer, 0, buffer.Length, timeout.Token).ConfigureAwait(false);
+                        timeout.Token.ThrowIfCancellationRequested();
+                        return count;
+                    }
+                    catch (Exception)
+                    {
+                        if (!timeout.IsCancellationRequested) throw;
+                        token.ThrowIfCancellationRequested();
+                        throw new IOException("45 秒未收到下载数据。");
+                    }
+                }
+            }
+        }
+
+        public static async Task<string> DownloadAsync(CodexDownloadPlan plan, string directory, IProgress<string> progress, CancellationToken token)
+        {
+            using (var client = new HttpClient(new HttpClientHandler { AllowAutoRedirect = false }) { Timeout = Timeout.InfiniteTimeSpan })
+                return await DownloadAsync(plan, directory, progress, token, client, AppLog.Write).ConfigureAwait(false);
+        }
+
+        internal static async Task<string> DownloadAsync(CodexDownloadPlan plan, string directory, IProgress<string> progress, CancellationToken token, HttpClient client, Action<string> log = null)
+        {
+            var target = Path.Combine(directory, CacheFileName(plan));
+            if (!IsMirrorAddress(plan.Url) || plan.Length <= 0 || plan.Length > 4L * 1024 * 1024 * 1024)
+                throw new InvalidDataException("无效的下载任务。");
+            Directory.CreateDirectory(directory);
+            var temp = target + ".partial";
+            using (new FileStream(Path.Combine(directory, ".codex-download.lock"), FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None))
+            {
+                if (File.Exists(target))
+                {
+                    try
+                    {
+                        if (progress != null) progress.Report("正在复核已缓存的安装包…");
+                        await VerifyFileAsync(target, plan, token).ConfigureAwait(false);
+                        return target;
+                    }
+                    catch (InvalidDataException) { File.Delete(target); }
+                }
+
+                // v0.8.1 and earlier stored completed packages with a random prefix.
+                foreach (var existing in Directory.EnumerateFiles(directory, "*-" + plan.FileName))
+                {
+                    var name = Path.GetFileName(existing);
+                    Guid oldDownloadId;
+                    if (name.Length != 33 + plan.FileName.Length || !Guid.TryParseExact(name.Substring(0, 32), "N", out oldDownloadId) ||
+                        new FileInfo(existing).Length != plan.Length) continue;
+                    if (progress != null) progress.Report("正在复核之前下载的同版本安装包…");
+                    try { await VerifyFileAsync(existing, plan, token).ConfigureAwait(false); }
+                    catch (InvalidDataException) { continue; }
+                    catch (IOException) { continue; }
+                    token.ThrowIfCancellationRequested();
+                    File.Move(existing, target);
+                    return target;
+                }
+
+                // Prefer the direct R2 mirror. Try the public mirror router on failure.
+                var direct = new UriBuilder(plan.Url) { Host = "codexapp-r2.agentsmirror.com" }.Uri;
+                var sources = new[] { direct, plan.Url, direct };
+                var failures = new List<string>();
+                foreach (var source in sources)
+                {
+                    token.ThrowIfCancellationRequested();
+                    var length = File.Exists(temp) ? new FileInfo(temp).Length : 0;
+                    if (length > plan.Length) { File.Delete(temp); length = 0; }
+                    try
+                    {
+                        if (length != plan.Length)
+                            await FetchPartialAsync(client, source, temp, length, plan.Length, progress, token).ConfigureAwait(false);
+                        if (progress != null) progress.Report("正在校验下载大小和 SHA-256…");
+                        try { await VerifyFileAsync(temp, plan, token).ConfigureAwait(false); }
+                        catch (InvalidDataException) { File.Delete(temp); throw; }
+                        token.ThrowIfCancellationRequested();
+                        File.Move(temp, target);
+                        return target;
+                    }
+                    catch (Exception ex)
+                    {
+                        if (!(ex is HttpRequestException || ex is IOException || ex is InvalidDataException || ex is OperationCanceledException)) throw;
+                        token.ThrowIfCancellationRequested();
+                        var detail = ex is OperationCanceledException ? "连接超时" :
+                            ex is HttpRequestException && !(ex is MirrorHttpException) ? "网络连接失败" : ex.Message;
+                        failures.Add(source.Host + "：" + detail);
+                        if (log != null) log("codex.download.retry " + failures[failures.Count - 1]);
+                    }
+                }
+                throw new IOException("镜像下载未完成，重新检查可继续下载。 " + String.Join(" / ", failures));
+            }
+        }
+
+        private sealed class MirrorHttpException : HttpRequestException
+        {
+            internal MirrorHttpException(int status) : base("HTTP " + status) {}
+        }
+
+        internal static long GetDownloadOffset(HttpResponseMessage response, long offset, long total)
+        {
+            if (response.StatusCode == HttpStatusCode.OK)
+            {
+                if (response.Content.Headers.ContentLength.HasValue && response.Content.Headers.ContentLength.Value != total)
+                    throw new InvalidDataException("镜像包大小与选定版本不同。");
+                return 0;
+            }
+            if (response.StatusCode != HttpStatusCode.PartialContent) throw new MirrorHttpException((int)response.StatusCode);
+            var range = response.Content.Headers.ContentRange;
+            if (offset <= 0 || range == null || range.Unit != "bytes" || range.From != offset ||
+                range.To != total - 1 || range.Length != total ||
+                (response.Content.Headers.ContentLength.HasValue && response.Content.Headers.ContentLength.Value != total - offset))
+                throw new InvalidDataException("镜像返回的续传位置或文件大小不匹配。");
+            return offset;
+        }
+
+        private static async Task FetchPartialAsync(HttpClient client, Uri url, string file, long offset, long total, IProgress<string> progress, CancellationToken token)
+        {
+            HttpResponseMessage response;
+            using (var connect = CancellationTokenSource.CreateLinkedTokenSource(token))
+            {
+                connect.CancelAfter(TimeSpan.FromSeconds(25));
+                if (progress != null) progress.Report(offset > 0 ? "正在连接镜像并准备续传…" : "正在连接镜像…");
+                response = await GetMirrorResponseAsync(client, url, offset, connect.Token).ConfigureAwait(false);
+            }
+            using (response)
+            {
+                if (response.StatusCode != HttpStatusCode.OK && response.StatusCode != HttpStatusCode.PartialContent)
+                    throw new MirrorHttpException((int)response.StatusCode);
+                if (response.Content == null) throw new InvalidDataException("镜像未返回安装包内容。");
+                if (response.Content.Headers.ContentEncoding.Count > 0 &&
+                    !System.Linq.Enumerable.All(response.Content.Headers.ContentEncoding, value => value == "identity"))
+                    throw new InvalidDataException("镜像返回了未经请求的内容编码。");
+                var start = GetDownloadOffset(response, offset, total);
+                using (var input = await response.Content.ReadAsStreamAsync().ConfigureAwait(false))
+                using (var output = new FileStream(file, start == 0 ? FileMode.Create : FileMode.Append, FileAccess.Write, FileShare.None, 262144, true))
+                {
+                    var buffer = new byte[262144];
+                    var position = start;
+                    var watch = System.Diagnostics.Stopwatch.StartNew();
+                    long lastUpdate = -1000;
+                    int count;
+                    while ((count = await ReadWithDeadlineAsync(input, buffer, token).ConfigureAwait(false)) > 0)
+                    {
+                        if (count > total - position) throw new InvalidDataException("镜像返回的数据超过安装包大小。");
+                        await output.WriteAsync(buffer, 0, count, token).ConfigureAwait(false);
+                        position += count;
+                        if (watch.ElapsedMilliseconds - lastUpdate < 1000) continue;
+                        lastUpdate = watch.ElapsedMilliseconds;
+                        var rate = (position - start) / Math.Max(0.1, watch.Elapsed.TotalSeconds) / 1048576;
+                        if (progress != null)
+                            progress.Report(String.Format("正在下载 {0}%（{1:F0}/{2:F0} MiB，{3:F2} MiB/s）",
+                                position * 100 / total, position / 1048576.0, total / 1048576.0, rate));
+                    }
+                    if (position != total) throw new IOException("镜像提前断开连接，已保留下载进度。");
+                }
+            }
         }
         internal static async Task CopyVerifiedAsync(Stream input, Stream output, long expectedLength, string expectedHash, IProgress<int> progress, CancellationToken token)
         {
@@ -177,11 +359,11 @@ namespace CodexZhLauncher
             using(var hash=SHA256.Create())
             {
                 var buffer=new byte[81920]; long total=0; int count; int last=-1;
-                while((count=await input.ReadAsync(buffer,0,buffer.Length,token))>0)
+                while((count=await input.ReadAsync(buffer,0,buffer.Length,token).ConfigureAwait(false))>0)
                 {
                     total+=count;
                     if(total>expectedLength)throw new InvalidDataException("下载超过清单规定大小。");
-                    await output.WriteAsync(buffer,0,count,token);
+                    await output.WriteAsync(buffer,0,count,token).ConfigureAwait(false);
                     hash.TransformBlock(buffer,0,count,null,0);
                     var percent=(int)(total*100/expectedLength);
                     if(percent!=last && progress!=null){progress.Report(percent);last=percent;}

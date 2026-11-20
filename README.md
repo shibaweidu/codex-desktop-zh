@@ -4,22 +4,22 @@
 
 ![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS-5B8DEF)
 ![Architecture](https://img.shields.io/badge/architecture-x64%20%7C%20arm64-6D7280)
-![Version](https://img.shields.io/badge/version-v0.8.1-C4B5FD)
+![Version](https://img.shields.io/badge/version-v0.8.2-C4B5FD)
 ![License](https://img.shields.io/badge/license-MIT-31B77A)
 
 **Codex Desktop 中文汉化增强工具**是一款面向 Windows 和 macOS 的 Codex 汉化启动器。它支持 Microsoft Store、便携版和 macOS App Bundle，可启用中文界面、翻译 Electron 原生菜单，并在 Codex 已运行时安全关闭后以中文模式重新启动。
 
 项目不解包、不替换 `app.asar`，不修改 Microsoft Store 安装目录，也不读取 Codex 账号、令牌或项目文件。
 
-当前版本：`0.8.1`
+当前版本：`0.8.2`
 
-v0.8.1 修复 Windows 更新 Codex 时误报“Microsoft Authenticode 签名无效”的问题；继续验证有效签名、准确发布者身份及 SHA-256，安装前再次校验文件。
+v0.8.2 为 Windows Codex 更新加入直连镜像、断点续传和缓存复用。部署后核对当前账户注册的版本，失败时显示 Windows 返回的错误。安装前继续校验 SHA-256、有效签名及发布者身份。
 
 ## v0.8 本地开发版
 
 v0.8.0 提供原生 WPF / SwiftUI 五页工作台：**概览、下载 Codex、界面汉化、主题外观、日志诊断**。深灰材质、淡紫强调色，赞助入口位于左侧栏。Windows 更新仅下载并校验，安装前由用户确认；macOS 更新还需通过发布工作流中的双架构构建与测试。首次发布状态以 GitHub Releases 页和 CI 结果为准。
 
-- **社区镜像更新**：Windows 和 macOS 都只读取 Wangnov 社区镜像清单与镜像文件；自动识别本机版本与芯片，最新版不下载，有新版时自动下载并校验。Windows 按 MSIX 包版本比较；macOS 先比较应用版本，版本相同时再比较构建号。Windows 安装前确认并由 AppX/UAC 验证签名；macOS 安装前确认，校验 Apple 签名、Team ID 和架构后覆盖重启。系统 Applications 目录可能要求 macOS 管理员授权；取消授权或校验失败会保留原应用。不强杀正在运行的 Codex；Windows 便携版不自动覆盖。
+- **社区镜像更新**：Windows 和 macOS 均使用 Wangnov 社区镜像，自动识别本机版本与芯片，有新版时下载并校验。Windows 按 MSIX 包版本比较，支持暂停续传与同版本缓存，确认后由 AppX 为当前账户部署并复核注册版本。macOS 先比较应用版本，再比较构建号，确认后校验 Apple 签名、Team ID 和架构并覆盖重启。系统 Applications 目录可能要求 macOS 管理员授权。Windows 更新要求先退出 Codex，便携版使用原安装渠道更新。
 - **运行时配色**：六款项目自有纯色预设和 12–18 字号预览。仅向本工具启动且进程身份仍可验证的会话添加自有 style，恢复时只移除该 style；不修改客户端文件、原生设置、菜单或代码语法配色。完整页面刷新后可能需要重新应用，不承诺新版 Codex 全部组件均适配。
 - **工具强调色**：只改变工具的主按钮、选中导航和进度强调色，保留深色材质；纸白预设在深色工具中使用淡紫回退以保持可读性。
 - **日志与设置**：日志搜索、提示/错误筛选、复制、导出；支持关闭启动时自动检查更新。

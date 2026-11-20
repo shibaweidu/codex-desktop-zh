@@ -35,7 +35,6 @@ namespace CodexZhLauncher
         private CancellationTokenSource downloadCancellation;
         private string downloadedFile;
         private CodexDownloadPlan downloadedPlan;
-        private CodexDownloadPlan latestCodexPlan;
         private bool codexInstallRequired;
         private bool closeAfterDownload;
         private bool mirrorCheckStarted;
@@ -135,7 +134,7 @@ namespace CodexZhLauncher
             var detail=Label("自动识别 Windows 架构与已安装版本。安装前校验大小、SHA-256、有效签名及 Codex 发布者身份。",12,false,true);detail.Margin=new Thickness(0,6,0,14);downloadOptions.Children.Add(detail);
             updateCodexButton=ActionButton("检查并更新 Codex",async delegate {await CheckAndUpdateCodexAsync(false);});updateCodexButton.MinWidth=230;downloadOptions.Children.Add(updateCodexButton);
             page.Children.Add(Card(downloadOptions));
-            var result=new StackPanel();cancelDownload=ActionButton("取消下载",delegate {if(downloadCancellation!=null) downloadCancellation.Cancel();});cancelDownload.IsEnabled=false;result.Children.Add(cancelDownload);
+            var result=new StackPanel();cancelDownload=ActionButton("暂停下载",delegate {if(downloadCancellation!=null) downloadCancellation.Cancel();});cancelDownload.IsEnabled=false;result.Children.Add(cancelDownload);
             openDownload=ActionButton("重试系统安装",async delegate {await InstallVerifiedCodexAsync();});openDownload.IsEnabled=false;result.Children.Add(openDownload);
             result.Children.Add(ActionButton("打开社区镜像项目",delegate {OpenExternal("https://github.com/Wangnov/codex-app-mirror");})); page.Children.Add(Card(result)); return page;
         }
@@ -173,100 +172,134 @@ namespace CodexZhLauncher
         private async Task CheckAndUpdateCodexAsync(bool automatic)
         {
             if(busy) return;
-            downloadedFile=null;downloadedPlan=null;latestCodexPlan=null;codexInstallRequired=false;openDownload.IsEnabled=false;cancelDownload.IsEnabled=false;
+            downloadedFile=null;downloadedPlan=null;codexInstallRequired=false;openDownload.IsEnabled=false;cancelDownload.IsEnabled=false;
             downloadCancellation=new CancellationTokenSource(); var token=downloadCancellation.Token;
             var installWhenReady=false;
-            CodexInstall detectedStore=null;
             SetBusy(true,"正在检查 Codex 版本","仅使用社区镜像清单");updateCodexButton.IsEnabled=false;
             try
             {
                 var localTask=CodexDiscovery.DetectStorePackageAsync();
                 var arch=CodexDownloads.NativeArchitecture;
                 var plan=await CodexDownloads.ResolveAsync("windows",arch,token);
-                var local=await localTask;detectedStore=local;
+                var local=await localTask;
                 if(currentInstall!=null&&!currentInstall.IsStorePackage)
                     throw new InvalidOperationException("当前选择的是便携版。社区镜像仅提供 Microsoft Store MSIX，不能覆盖便携版；已停止以免更新错目标。");
-                if(local==null && currentInstall!=null && !currentInstall.IsStorePackage)
-                    throw new InvalidOperationException("检测到便携版。社区镜像提供 Microsoft Store 签名包，不能安全覆盖便携版；请先安装 Store 版或继续使用原有便携版更新方式。");
                 if(local==null)
                 {
-                    latestCodexPlan=plan;codexInstallRequired=true;
+                    codexInstallRequired=true;
                     downloadStatus.Text="已发现可用版本 "+plan.PackageVersion+"（"+arch+"）\n尚未检测到 Store 安装，可下载并安装。";
                 }
                 else if(!CodexDownloads.NeedsUpdate(local.Version,plan.PackageVersion))
                 {
-                    latestCodexPlan=null;codexInstallRequired=false;
                     downloadStatus.Text="已是最新版本\n本机 "+local.Version+" · 镜像 "+plan.PackageVersion+"（"+arch+"）";
                     AppendLog("Codex 已是最新版本 "+local.Version+"；未下载、未修改。",Accent);return;
                 }
                 else
                 {
-                    latestCodexPlan=plan;codexInstallRequired=true;
+                    codexInstallRequired=true;
                     downloadStatus.Text="发现新版本 "+plan.PackageVersion+"\n本机 "+local.Version+" → 社区镜像；正在下载…";
                 }
                 if(automatic){AppendLog(downloadStatus.Text,TextSecondary);}
                 AppendLog("社区镜像下载计划："+plan.PackageVersion+" "+arch+" SHA-256="+plan.Sha256,TextSecondary);
-                var downloadProgress=new Progress<int>(n=>{if(IsLoaded) downloadStatus.Text="正在下载 "+plan.Version+"（"+n+"%）";});
-                downloadedFile=await CodexDownloads.DownloadAsync(plan,Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),"Downloads","Codex"),downloadProgress,token);
-                downloadedPlan=plan;
-                var verificationScript="[Console]::OutputEncoding=[Text.Encoding]::UTF8; "+CodexDownloads.BuildWindowsVerificationScript(plan,downloadedFile);
-                var verification=await ProcessRunner.RunAsync("powershell.exe","-NoProfile -NonInteractive -EncodedCommand "+Convert.ToBase64String(System.Text.Encoding.Unicode.GetBytes(verificationScript)));
-                if(verification.ExitCode!=0)throw new InvalidDataException("MSIX 校验失败，已拒绝安装："+verification.Error.Trim());
+                var downloadProgress=new Progress<string>(message=>{if(IsLoaded && downloadCancellation!=null && !token.IsCancellationRequested) downloadStatus.Text=message;});
+                cancelDownload.IsEnabled=true;
+                var file=await CodexDownloads.DownloadAsync(plan,Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),"Downloads","Codex"),downloadProgress,token);
+                cancelDownload.IsEnabled=false;
+                downloadStatus.Text="正在校验 Windows 签名和 Codex 发布者…";
+                var verification=await RunCodexDeploymentScriptAsync(CodexDownloads.BuildWindowsVerificationScript(plan,file));
+                if(verification.ExitCode!=0)throw new InvalidDataException("MSIX 校验失败，已拒绝安装：" + DeploymentDetails(verification));
                 token.ThrowIfCancellationRequested();
+                downloadedFile=file;
+                downloadedPlan=plan;
                 AppendLog(verification.Output.Trim(),TextSecondary);
                 downloadStatus.Text="大小、SHA-256、签名及发布者身份校验通过。\n"+(CodexDiscovery.CountRunningCodexProcesses(local??currentInstall)>0?"Codex 正在运行；请先退出，再点“重试系统安装”。":"准备请求系统安装授权…");
                 AppendLog("MSIX 身份锁定 OpenAI.Codex；部署前将重新校验文件，Windows AppX 部署服务继续验证包签名。",Accent);
-                if(CodexDiscovery.CountRunningCodexProcesses(local??currentInstall)>0){openDownload.IsEnabled=true;return;}
-                installWhenReady=true;
+                openDownload.IsEnabled=true;
+                installWhenReady=CodexDiscovery.CountRunningCodexProcesses(local??currentInstall)==0;
             }
-            catch(OperationCanceledException) {downloadStatus.Text="下载已取消，未验证文件已清理。"; AppendLog(downloadStatus.Text,TextSecondary);}
+            catch(OperationCanceledException) {downloadStatus.Text=token.IsCancellationRequested ? "下载已暂停，重新检查可继续下载。" : "连接镜像超时，请重试。"; AppendLog(downloadStatus.Text,TextSecondary);}
             catch(Exception ex) {downloadStatus.Text="更新失败："+ex.Message; AppendLog(downloadStatus.Text,Danger);}
             finally {cancelDownload.IsEnabled=false;downloadCancellation.Dispose();downloadCancellation=null;SetBusy(false,null,null);if(updateCodexButton!=null)updateCodexButton.IsEnabled=true;UpdatePresentation();if(closeAfterDownload)Close();}
-            if(installWhenReady)await InstallVerifiedCodexAsync(detectedStore);
+            if(installWhenReady && !closeAfterDownload)await InstallVerifiedCodexAsync();
         }
-        private async Task InstallVerifiedCodexAsync(CodexInstall detectedStore=null)
+        private async Task InstallVerifiedCodexAsync()
         {
             if(busy||String.IsNullOrWhiteSpace(downloadedFile)||downloadedPlan==null||!File.Exists(downloadedFile))return;
-            var installed=await CodexDiscovery.DetectStorePackageAsync();if(detectedStore!=null)installed=detectedStore;
-            if(CodexDiscovery.CountRunningCodexProcesses(installed??currentInstall)>0){downloadStatus.Text="Codex 仍在运行，系统无法安全覆盖。退出 Codex 后再点击重试。";AppendLog(downloadStatus.Text,Warning);return;}
-            if(!codexInstallRequired || !CodexDownloads.NeedsUpdate(installed==null?null:installed.Version,downloadedPlan.PackageVersion))
-            {downloadStatus.Text="本机版本已不低于该安装包版本；为避免降级，已取消安装。";openDownload.IsEnabled=false;AppendLog(downloadStatus.Text,Warning);return;}
-            if(downloadedPlan.Architecture!=CodexDownloads.NativeArchitecture){downloadStatus.Text="安装包架构与本机不匹配，已拒绝安装。";return;}
-            var confirmation=MessageBox.Show(this,"将从社区镜像安装 Codex "+downloadedPlan.PackageVersion+"，并更新本机 Store 应用。\n\nWindows 可能显示 UAC 管理员授权提示；只有批准后安装才会继续。请先保存工作并确认 Codex 已关闭。是否继续？","确认安装 Codex 更新",MessageBoxButton.YesNo,MessageBoxImage.Warning);
-            if(confirmation!=MessageBoxResult.Yes){downloadStatus.Text="已保留下载包；你可以稍后安装或重新检查版本。";AppendLog("用户取消 Codex 安装。",TextSecondary);return;}
-            if(CodexDiscovery.CountRunningCodexProcesses(installed??currentInstall)>0){downloadStatus.Text="检测到 Codex 又启动了，请退出后重试安装。";AppendLog(downloadStatus.Text,Warning);return;}
+            SetBusy(true,"正在检查系统安装状态","保持 Codex 关闭");
+            openDownload.IsEnabled=false;
             try
             {
-                var script=CodexDownloads.BuildWindowsInstallScript(downloadedPlan,downloadedFile);
-                var args="-NoProfile -NonInteractive -Command "+ProcessRunner.QuoteArgument(script);
-                SetBusy(true,"正在通过 Windows 部署更新 Codex","保持 Codex 关闭；请查看系统错误");
-                var result=await RunElevatedInstallAsync(script);
-                if(!result.Item1)throw new InvalidOperationException(result.Item2);
-                currentInstall=await CodexDiscovery.DetectStorePackageAsync();
-                if(currentInstall==null||CodexDownloads.NeedsUpdate(currentInstall.Version,downloadedPlan.PackageVersion))throw new InvalidOperationException("部署命令完成，但已安装包版本仍未达到目标版本。");
-                downloadStatus.Text="Codex 已更新到 "+currentInstall.Version+"。";AppendLog(downloadStatus.Text,Accent);openDownload.IsEnabled=false;try{File.Delete(downloadedFile);}catch(Exception cleanup){AppendLog("更新已成功，但下载包清理失败："+cleanup.Message,Warning);}downloadedFile=null;downloadedPlan=null;codexInstallRequired=false;
+                var installed=await CodexDiscovery.DetectStorePackageAsync();
+                if(!codexInstallRequired || !CodexDownloads.NeedsUpdate(installed==null?null:installed.Version,downloadedPlan.PackageVersion))
+                {
+                    currentInstall=installed;
+                    codexInstallRequired=false;
+                    downloadStatus.Text="Windows 已注册相同或更新版本，本次无需安装。";
+                    AppendLog(downloadStatus.Text,Accent);
+                    return;
+                }
+                if(downloadedPlan.Architecture!=CodexDownloads.NativeArchitecture)
+                    throw new InvalidOperationException("安装包架构与本机不匹配。");
+                if(CodexDiscovery.CountRunningCodexProcesses(installed??currentInstall)>0)
+                {
+                    downloadStatus.Text="请退出 Codex，再点“重试系统安装”。";
+                    return;
+                }
+                var confirmation=MessageBox.Show(this,"将通过 Windows 为当前账户安装社区镜像中的 Codex "+downloadedPlan.PackageVersion+"。请确认已保存工作并退出 Codex。是否继续？",
+                    "确认安装 Codex 更新",MessageBoxButton.YesNo,MessageBoxImage.Warning);
+                if(confirmation!=MessageBoxResult.Yes){downloadStatus.Text="下载包已保留，可稍后安装。";return;}
+                if(CodexDiscovery.CountRunningCodexProcesses(installed??currentInstall)>0)
+                {
+                    downloadStatus.Text="检测到 Codex 又启动了，请退出后重试安装。";
+                    return;
+                }
+
+                downloadStatus.Text="Windows 正在复核安装包并部署。系统繁忙时，这一步可能需要几分钟。";
+                AppendLog("开始通过 Windows AppX 为当前账户部署 Codex " + downloadedPlan.PackageVersion,TextSecondary);
+                ProcessResult result;
+                using (new FileStream(downloadedFile,FileMode.Open,FileAccess.Read,FileShare.Read))
+                    result=await RunCodexDeploymentScriptAsync(CodexDownloads.BuildWindowsInstallScript(downloadedPlan,downloadedFile));
+
+                var details=DeploymentDetails(result);
+                AppendLog(details,result.ExitCode==0?TextSecondary:Warning);
+                downloadStatus.Text="正在确认当前账户的 Codex 注册版本…";
+                CodexInstall registered=null;
+                for(var attempt=0;attempt<6;attempt++)
+                {
+                    if(attempt>0)await Task.Delay(2000);
+                    registered=await CodexDiscovery.DetectStorePackageAsync(requireHealthy:true);
+                    if(registered!=null && !CodexDownloads.NeedsUpdate(registered.Version,downloadedPlan.PackageVersion))break;
+                    if(result.ExitCode!=0 && result.Output.IndexOf("MSIX_DEPLOY_START",StringComparison.Ordinal)<0)break;
+                }
+                if(registered==null||CodexDownloads.NeedsUpdate(registered.Version,downloadedPlan.PackageVersion))
+                    throw new InvalidOperationException(details+"。当前账户尚未注册目标版本，安装包已保留。");
+                currentInstall=registered;
+                downloadStatus.Text="Codex 已更新到 "+currentInstall.Version+"。";
+                AppendLog(downloadStatus.Text,Accent);
+                try{File.Delete(downloadedFile);}catch(IOException cleanup){AppendLog("安装包清理失败："+cleanup.Message,Warning);}catch(UnauthorizedAccessException cleanup){AppendLog("安装包清理失败："+cleanup.Message,Warning);}
+                downloadedFile=null;downloadedPlan=null;codexInstallRequired=false;
                 RefreshWorkspaceStatus("Codex 已更新");
             }
             catch(Exception ex){downloadStatus.Text="系统安装失败："+ex.Message;AppendLog(downloadStatus.Text,Danger);}
-            finally{SetBusy(false,null,null);UpdatePresentation();}
-        }
-        private async Task<Tuple<bool,string>> RunElevatedInstallAsync(string installScript)
-        {
-            var id=Guid.NewGuid().ToString("N");var scriptPath=Path.Combine(Path.GetTempPath(),"CodexZhInstall-"+id+".ps1");var resultPath=scriptPath+".result";
-            var sid=System.Security.Principal.WindowsIdentity.GetCurrent().User.Value;
-            var wrapped="$ErrorActionPreference='Stop'; if([Security.Principal.WindowsIdentity]::GetCurrent().User.Value -ne "+ProcessRunner.PowerShellLiteral(sid)+"){throw '管理员账户与当前登录用户不同；为避免安装到错误账户，已取消。'}; try {"+installScript+"; [IO.File]::WriteAllText("+ProcessRunner.PowerShellLiteral(resultPath)+",'OK',[Text.Encoding]::UTF8); exit 0} catch { [IO.File]::WriteAllText("+ProcessRunner.PowerShellLiteral(resultPath)+",$_.ToString(),[Text.Encoding]::UTF8); exit 1 }";
-            try
+            finally
             {
-                File.WriteAllText(scriptPath,wrapped,new System.Text.UTF8Encoding(false));
-                using(var process=Process.Start(new ProcessStartInfo{FileName="powershell.exe",Arguments="-NoProfile -NonInteractive -ExecutionPolicy Bypass -File "+ProcessRunner.QuoteArgument(scriptPath),UseShellExecute=true,Verb="runas",WindowStyle=ProcessWindowStyle.Hidden}))
-                    await Task.Run(()=>process.WaitForExit());
-                var detail=File.Exists(resultPath)?File.ReadAllText(resultPath,System.Text.Encoding.UTF8).Trim():"Windows 安装程序未返回详细信息。";
-                return Tuple.Create(detail=="OK",detail=="OK"?"":detail);
+                openDownload.IsEnabled=codexInstallRequired && downloadedPlan!=null && File.Exists(downloadedFile);
+                SetBusy(false,null,null);
+                UpdatePresentation();
             }
-            catch(System.ComponentModel.Win32Exception ex)
-            {return Tuple.Create(false,ex.NativeErrorCode==1223?"已取消 UAC 授权，Codex 未安装。":"无法启动管理员安装："+ex.Message);}
-            catch(Exception ex){return Tuple.Create(false,"管理员安装失败："+ex.Message);}
-            finally{try{if(File.Exists(scriptPath))File.Delete(scriptPath);}catch{}try{if(File.Exists(resultPath))File.Delete(resultPath);}catch{}}
+        }
+        private static Task<ProcessResult> RunCodexDeploymentScriptAsync(string script)
+        {
+            var wrapped="[Console]::OutputEncoding=[Text.Encoding]::UTF8; $ProgressPreference='SilentlyContinue'; try {"+
+                script+"; exit 0 } catch { [Console]::Error.WriteLine((($_.Exception.Message, $_.FullyQualifiedErrorId) -join [Environment]::NewLine)); exit 1 }";
+            var executable=Path.Combine(Environment.SystemDirectory,"WindowsPowerShell","v1.0","powershell.exe");
+            return ProcessRunner.RunAsync(executable,"-NoProfile -NonInteractive -EncodedCommand "+
+                Convert.ToBase64String(System.Text.Encoding.Unicode.GetBytes(wrapped)));
+        }
+        private static string DeploymentDetails(ProcessResult result)
+        {
+            var details=String.IsNullOrWhiteSpace(result.Error)?result.Output.Trim():result.Error.Trim();
+            return "Windows 退出码 "+result.ExitCode+(details.Length>0?" · "+details:"");
         }
         private async Task ApplyWorkspaceThemeAsync(bool reset)
         {
