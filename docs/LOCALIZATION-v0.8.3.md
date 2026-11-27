@@ -1,6 +1,6 @@
 # v0.8.3 汉化兼容修复与验收
 
-状态：本地开发构建，尚未发布。验收日期：2026-11-28。
+版本：v0.8.3。发布前验收日期：2026-11-28。
 
 ## 修复的问题
 
@@ -23,7 +23,7 @@ v0.8.3 使用当前客户端的设置服务读写 `localeOverride`，并验证�
 | Windows 工具界面 | 点击不重启修复后显示成功，已截图 |
 | macOS arm64 / x86_64 | 两种架构的 Swift 测试、自检、App Bundle 构建、签名及更新器集成检查均在 CI 通过；真实 Codex 汉化尚未实机验收 |
 
-对应源码与文档提交：`119a5f9`。完整 [三平台 CI 记录](https://github.com/shibaweidu/codex-desktop-zh/actions/runs/46053310246) 已全部通过；此后仅补充验收文档，没有更改已测代码。
+对应源码与文档提交：`119a5f9`。完整 [三平台 CI 记录](https://github.com/shibaweidu/codex-desktop-zh/actions/runs/46053310246) 已全部通过；发布准备仅补充文档及发布说明读取流程，没有更改已测应用代码。正式发布由 [Release 工作流](https://github.com/shibaweidu/codex-desktop-zh/actions/workflows/release.yml) 重新构建、测试和打包。
 
 本机实际报告摘要：
 
@@ -35,7 +35,7 @@ v0.8.3 使用当前客户端的设置服务读写 `localeOverride`，并验证�
 }
 ```
 
-![Windows v0.8.3 开发版汉化验证成功](images/codex-zh-launcher-overview.png)
+![Windows v0.8.3 发布前验收汉化验证成功](images/codex-zh-launcher-overview.png)
 
 这些结果覆盖本次检查的界面控件与菜单快照，不等于遍历每个设置页、第三方插件描述或所有未来版本的标签。真实 Mac 启动、菜单栏及关闭确认仍需在 Apple Silicon / Intel 机器上人工验收。
 

@@ -74,7 +74,7 @@ git push -u origin main
 
 ## 截图与 Social Preview
 
-使用与页面描述版本一致的实际窗口截图，并确保截图中没有用户名、项目名称、路径、任务内容或其他个人信息。开发版截图必须说明版本与发布状态。当前 Windows 实拍为 `docs/images/codex-zh-launcher-overview.png`，对应 v0.8.3 本地开发版。
+使用与页面描述版本一致的实际窗口截图，并确保截图中没有用户名、项目名称、路径、任务内容或其他个人信息。开发版或发布前验收截图必须明确标注。当前 Windows 实拍为 `docs/images/codex-zh-launcher-overview.png`，对应 v0.8.3 发布前验收构建。
 
 推荐文件：
 

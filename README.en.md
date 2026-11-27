@@ -15,11 +15,11 @@ Localization does not unpack or replace `app.asar`, modify the Microsoft Store i
 
 [Windows x64 EXE](https://github.com/shibaweidu/codex-desktop-zh/releases/latest/download/Codex-Zh-Launcher-Windows-x64.exe) · [macOS Apple Silicon ZIP](https://github.com/shibaweidu/codex-desktop-zh/releases/latest/download/Codex-Zh-Launcher-macOS-arm64.zip) · [macOS Intel ZIP](https://github.com/shibaweidu/codex-desktop-zh/releases/latest/download/Codex-Zh-Launcher-macOS-x64.zip) · [SHA256SUMS.txt](https://github.com/shibaweidu/codex-desktop-zh/releases/latest/download/SHA256SUMS.txt)
 
-The latest published release is v0.8.2. Version 0.8.3 is currently a local development build: it adapts to newer Codex settings and Windows menu services, corrects language verification, and adds Windows repair without restarting. These changes are not available in the release downloads yet.
+Current version: **[v0.8.3](https://github.com/shibaweidu/codex-desktop-zh/releases/tag/v0.8.3)**. This release adapts to newer Codex settings and Windows menu services, corrects language verification, and adds Windows repair without restarting. The download links above always select the latest stable release.
 
 ![Windows dark workspace showing successful Chinese UI and menu verification](docs/images/codex-zh-launcher-overview.png)
 
-Actual v0.8.3 development screenshot with Codex 26.1120.6357.0. All 46 labels in the inspected menu snapshot passed; this does not promise coverage of every page, third-party plugin description, or future release.
+Actual v0.8.3 pre-release acceptance screenshot with Codex 26.1120.6357.0. All 46 labels in the inspected menu snapshot passed; this does not promise coverage of every page, third-party plugin description, or future release.
 
 ## Client updates and appearance
 
@@ -39,7 +39,8 @@ Published releases include both Mac architectures. The current v0.8.3 changes ha
 - Supports portable `Codex.exe` and `ChatGPT.exe` installations
 - Detects `Codex.app` and `ChatGPT.app` in `/Applications` and `~/Applications`
 - Provides a native SwiftUI application for Apple Silicon and Intel Macs running macOS 13+
-- Enables Codex's built-in i18n dynamic configuration before page load, then selects `zh-CN` through the settings bridge
+- Selects Codex's built-in Chinese resources through current settings services, retaining older settings-bridge and i18n configuration compatibility
+- Offers Windows repair and verification without restarting when an existing local endpoint can be verified
 - Translates native Electron application menus at runtime
 - Reports menu labels that need compatibility updates
 - Safely closes a running Codex instance before localization and restart
@@ -79,7 +80,7 @@ The shutdown sequence requests a graceful exit, waits five seconds, revalidates 
 The launcher allocates two random loopback ports for each Codex session:
 
 - Chromium DevTools for applying the official `localeOverride` setting
-- Renderer menu services on newer Windows clients, with Electron main-process inspector support for older Windows clients and macOS (v0.8.3 source behavior)
+- Renderer menu services on newer Windows clients, with Electron main-process inspector support for older Windows clients and macOS
 
 Both endpoints bind to `127.0.0.1`. Localization and color presets do not change Codex installation files.
 

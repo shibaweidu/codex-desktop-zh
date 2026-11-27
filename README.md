@@ -23,7 +23,7 @@ An open-source Codex Desktop Chinese localization tool for Windows and macOS, wi
 
 [全部版本与更新说明](https://github.com/shibaweidu/codex-desktop-zh/releases) · [SHA-256 校验文件](https://github.com/shibaweidu/codex-desktop-zh/releases/latest/download/SHA256SUMS.txt) · [Windows 教程](docs/WINDOWS.md) · [macOS 教程](docs/MACOS.md) · [问题排查](docs/TROUBLESHOOTING.md)
 
-以上链接指向 GitHub 最新已发布版本，当前为 **v0.8.2**。源码中的 **v0.8.3 正在开发**，新增新版 Codex 设置服务兼容、Windows 菜单修复和不重启验证；尚未发布的功能不会通过下载链接提前提供。详见 [更新记录](CHANGELOG.md)。
+当前版本：**[v0.8.3](https://github.com/shibaweidu/codex-desktop-zh/releases/tag/v0.8.3)**。本次修复新版 Codex 的语言设置与 Windows 菜单兼容问题，新增“修复并验证（不重启）”。以上下载入口始终指向最新正式版，详见 [更新记录](CHANGELOG.md)。
 
 v0.8.2 为 Windows Codex 更新加入直连镜像、断点续传和缓存复用。部署后核对当前账户注册的版本，失败时显示 Windows 返回的错误。安装前继续校验 SHA-256、有效签名及发布者身份。
 
@@ -31,7 +31,7 @@ v0.8.2 为 Windows Codex 更新加入直连镜像、断点续传和缓存复用�
 
 ![Codex 汉化工具 Windows 深色工作台，显示中文界面与菜单验证成功](docs/images/codex-zh-launcher-overview.png)
 
-本机实拍：Windows v0.8.3 开发构建，对 Codex `26.1120.6357.0` 执行“修复并验证（不重启）”后的成功状态。当前菜单检查 46 项，未覆盖列表为空。截图不代表所有 Codex 版本或所有第三方插件内容均已翻译。
+本机实拍：Windows v0.8.3 发布前验收构建，对 Codex `26.1120.6357.0` 执行“修复并验证（不重启）”后的成功状态。当前菜单检查 46 项，未覆盖列表为空。截图不代表所有 Codex 版本或所有第三方插件内容均已翻译。
 
 ## 客户端下载与主题外观
 
@@ -50,7 +50,7 @@ v0.8.2 为 Windows Codex 更新加入直连镜像、断点续传和缓存复用�
 - 支持手动选择便携版 `Codex.exe` 或 `ChatGPT.exe`
 - 自动检测 `/Applications` 和 `~/Applications` 中的 `Codex.app` / `ChatGPT.app`
 - 原生 SwiftUI macOS 13+ 界面，分别支持 Apple Silicon 与 Intel
-- 使用 Codex 自带中文资源；开发中的 v0.8.3 优先接入新版设置服务，同时保留旧版动态配置与设置桥兼容
+- 使用 Codex 自带中文资源，优先接入新版设置服务，同时保留旧版动态配置与设置桥兼容
 - 运行时翻译文件、编辑、视图、窗口、帮助等应用菜单，并单独报告验证结果
 - 自动记录新版 Codex 中尚未覆盖的菜单标签
 - Codex 已运行时显示“关闭并汉化重启”
@@ -79,7 +79,7 @@ Windows 直接运行 EXE。macOS 解压 ZIP 后，将应用拖到“应用程序
 4. Codex 已运行时，点击“关闭并汉化重启”，阅读提示后确认。
 5. 在运行日志中查看中文界面和原生菜单的验证结果。
 
-Windows v0.8.3 开发构建还提供“修复并验证（不重启）”。它只连接当前安装进程拥有的可验证回环接口；不支持此接口的会话需要先保存工作，再使用确认后的关闭重启流程。
+Windows v0.8.3 起提供“修复并验证（不重启）”。它只连接当前安装进程拥有的可验证回环接口；不支持此接口的会话需要先保存工作，再使用确认后的关闭重启流程。
 
 软件关闭后，Codex 不会立刻变回英文。`localeOverride` 会由 Codex 保存；原生菜单翻译属于当前进程的运行时补丁，因此以后需要完整菜单汉化时仍建议通过本工具启动。
 
@@ -110,7 +110,7 @@ Windows 只处理当前 Store 安装目录或所选便携版目录中的 `Codex.
 启动器为本次 Codex 进程分配两个随机回环端口：
 
 - Chromium DevTools 端口：调用 Codex 设置服务或旧设置桥，应用并验证 `localeOverride`
-- 新版 Windows 菜单通过渲染页面的菜单服务翻译；旧版 Windows 与 macOS 使用 Electron 主进程 inspector（v0.8.3 源码行为）
+- 新版 Windows 菜单通过渲染页面的菜单服务翻译；旧版 Windows 与 macOS 使用 Electron 主进程 inspector
 
 两个端口都绑定到 `127.0.0.1`。汉化和配色只使用运行时补丁；用户另行确认客户端更新时，工具会部署 Windows 包或替换 Codex.app。
 

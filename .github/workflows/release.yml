@@ -100,6 +100,9 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.release_tag || github.ref }}
       - uses: actions/download-artifact@v4
         with:
           pattern: release-*
@@ -113,4 +116,9 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           release_tag='${{ inputs.release_tag || github.ref_name }}'
-          gh release create "$release_tag" release-assets/* --repo '${{ github.repository }}' --title "Codex 汉化增强工具 $release_tag" --generate-notes --verify-tag
+          notes_file="docs/releases/$release_tag.md"
+          if [ -f "$notes_file" ]; then
+            gh release create "$release_tag" release-assets/* --repo '${{ github.repository }}' --title "Codex 汉化增强工具 $release_tag" --notes-file "$notes_file" --verify-tag
+          else
+            gh release create "$release_tag" release-assets/* --repo '${{ github.repository }}' --title "Codex 汉化增强工具 $release_tag" --generate-notes --verify-tag
+          fi
