@@ -31,7 +31,7 @@ Codex client updates use the Wangnov community mirror on both platforms. The lau
 
 Six reversible runtime color presets apply to launcher-created, process-verified sessions. A full page refresh can remove the runtime style.
 
-Published releases include both Mac architectures. The current v0.8.3 changes have passed Windows builds, isolated tests, and local integration; updated macOS code still requires Mac/CI and real-device verification. See the [v0.8.3 acceptance record](docs/LOCALIZATION-v0.8.3.md) (Chinese).
+Published releases include both Mac architectures. The current v0.8.3 changes have passed Windows builds, isolated tests, local integration, and CI builds/tests on both Mac architectures. Real Codex localization on Mac still requires manual acceptance. See the [v0.8.3 acceptance record](docs/LOCALIZATION-v0.8.3.md) (Chinese).
 
 ## Features
 

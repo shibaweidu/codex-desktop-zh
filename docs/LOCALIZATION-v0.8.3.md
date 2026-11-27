@@ -21,7 +21,9 @@ v0.8.3 使用当前客户端的设置服务读写 `localeOverride`，并验证�
 | 原有回归 | 主题脚本、56 项工作台服务、MSIX 验证及临时进程关闭测试通过 |
 | 本机 `--localize-running` | 语言与菜单均通过；没有关闭、重载或替换真实 Codex |
 | Windows 工具界面 | 点击不重启修复后显示成功，已截图 |
-| macOS | 同步共享语言验证与资源；本机为 Windows，尚未运行 Swift 构建及 Mac 实机验收 |
+| macOS arm64 / x86_64 | 两种架构的 Swift 测试、自检、App Bundle 构建、签名及更新器集成检查均在 CI 通过；真实 Codex 汉化尚未实机验收 |
+
+对应源码与文档提交：`119a5f9`。完整 [三平台 CI 记录](https://github.com/shibaweidu/codex-desktop-zh/actions/runs/46053310246) 已全部通过；此后仅补充验收文档，没有更改已测代码。
 
 本机实际报告摘要：
 

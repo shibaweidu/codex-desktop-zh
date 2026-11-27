@@ -29,6 +29,6 @@
 
 “下载 Codex”使用社区镜像元数据，按版本和架构校验更新；替换系统 Applications 中的客户端可能需要 macOS 授权。汉化运行时补丁本身不修改 Codex.app。
 
-日志位于 `~/Library/Logs/CodexZhLauncher/launcher.log`。v0.8.3 共享脚本改动尚需 Mac / CI 验证；Windows 的本机验收不代表 macOS 已通过实机验收。
+日志位于 `~/Library/Logs/CodexZhLauncher/launcher.log`。v0.8.3 的两种 Mac 架构均已通过 CI 构建与测试；Windows 的本机汉化验收及 Mac CI 不代表 macOS 已通过真实 Codex 实机验收。
 
 返回 [项目介绍](../README.md) · [更新说明](UPDATES.md) · [问题排查](TROUBLESHOOTING.md)
