@@ -64,6 +64,20 @@ final class LocalizationRuntimeTests: XCTestCase {
         XCTAssertFalse(expressions.contains { $0.contains("Menu.setApplicationMenu") })
     }
 
+    func testSuccessfulSettingCannotOverrideFailedUIVerification() async throws {
+        let runtime = LocalizationRuntime(
+            processService: EmptyProcessService(),
+            launcher: FakeLauncher(),
+            devTools: FakeDevTools(verificationStatus: "partial"),
+            resources: try SharedResources(rootURL: sharedDirectory()),
+            sleeper: ImmediateSleeper()
+        )
+        let report = try await runtime.launch(install: install(), locale: "zh-CN")
+        XCTAssertFalse(report.localeApplied)
+        XCTAssertFalse(report.complete)
+        XCTAssertTrue(report.localeDetail.contains("verification="))
+    }
+
     private func install() -> CodexInstall {
         CodexInstall(
             kind: "test",
@@ -142,6 +156,8 @@ private final class RestartingProcessService: CodexProcessServing {
 }
 
 private actor FakeDevTools: DevToolsServing {
+    let verificationStatus: String
+    init(verificationStatus: String = "ok") { self.verificationStatus = verificationStatus }
     var expressions: [String] = []
     var evaluatedURLs: [String] = []
     var installedScripts: [String] = []
@@ -200,7 +216,10 @@ private actor FakeDevTools: DevToolsServing {
             localeApplicationURL = webSocketURL
             operations.append("set-locale")
         }
-        if expression.contains("zhMarkers") { verificationURL = webSocketURL }
+        if expression.contains("zhMarkers") {
+            verificationURL = webSocketURL
+            return "{\"status\":\"\(verificationStatus)\"}"
+        }
         return "{\"status\":\"ok\"}"
     }
 }

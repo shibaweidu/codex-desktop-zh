@@ -28,11 +28,18 @@ struct SharedResources {
         let template = try read("locale-script.js")
         let localeData = try JSONSerialization.data(withJSONObject: locale, options: [.fragmentsAllowed])
         let encoded = String(decoding: localeData, as: UTF8.self)
-        return try replacing(template, placeholder: "__LOCALE_JSON__", value: encoded)
+        let localized = try replacing(template, placeholder: "__LOCALE_JSON__", value: encoded)
+            .replacingOccurrences(of: "__ALLOW_RELOAD_JSON__", with: "true")
+        return try read("app-services-script.js") + ";\n" + localized
     }
 
     func buildI18nBootstrap() throws -> String {
         try read("i18n-bootstrap.js")
+    }
+
+    func buildLocaleVerification(locale: String) throws -> String {
+        let data = try JSONSerialization.data(withJSONObject: locale, options: [.fragmentsAllowed])
+        return try replacing(read("locale-verification.js"), placeholder: "__LOCALE_JSON__", value: String(decoding: data, as: UTF8.self))
     }
 
     func buildThemeScript(id: String, fontSize: Int) throws -> String {

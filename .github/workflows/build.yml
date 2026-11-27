@@ -56,6 +56,7 @@ jobs:
       - run: npm install --no-save --package-lock=false playwright@1.62.1
       - run: npx playwright install --with-deps chromium
       - run: node tests/theme-script.test.cjs
+      - run: node tests/localization-script.test.cjs
 
   macos:
     name: macOS ${{ matrix.arch }}

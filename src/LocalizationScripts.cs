@@ -17,17 +17,32 @@ namespace CodexZhLauncher
         private static readonly Dictionary<string, Dictionary<string, string>> TranslationGroups =
             LoadTranslationGroups();
 
-        public static string BuildLocaleScript(string locale)
+        public static string BuildLocaleScript(string locale, bool allowReload = true)
         {
             var template = ReadResource(LocaleResource);
-            var script = template.Replace("__LOCALE_JSON__", Serializer.Serialize(locale));
+            var script = ReadResource("CodexZhLauncher.Shared.app-services-script.js") + ";\n" +
+                template.Replace("__LOCALE_JSON__", Serializer.Serialize(locale))
+                    .Replace("__ALLOW_RELOAD_JSON__", Serializer.Serialize(allowReload));
             EnsureResolved(script, "__LOCALE_JSON__");
+            EnsureResolved(script, "__ALLOW_RELOAD_JSON__");
             return script;
         }
 
         public static string BuildI18nBootstrap()
         {
             return ReadResource(I18nBootstrapResource);
+        }
+
+        public static string BuildLocaleVerification(string locale)
+        {
+            return ReadResource("CodexZhLauncher.Shared.locale-verification.js")
+                .Replace("__LOCALE_JSON__", Serializer.Serialize(locale));
+        }
+
+        public static string BuildAppServicesProbe()
+        {
+            return ReadResource("CodexZhLauncher.Shared.app-services-script.js") +
+                ";\n(async function(){var s=await globalThis.__codexZhGetAppServices();return JSON.stringify({status:s&&s.settings&&typeof s.settings.write==='function'?'ok':'unavailable'});})()";
         }
 
         public static string BuildMenuScript()
@@ -41,7 +56,7 @@ namespace CodexZhLauncher
                 ? "macos"
                 : "windows";
             var translations = MergeTranslations(normalized);
-            var script = ReadResource(MenuResource)
+            var script = ReadResource("CodexZhLauncher.Shared.app-services-script.js") + ";\n" + ReadResource(MenuResource)
                 .Replace("__TRANSLATIONS_JSON__", Serializer.Serialize(translations))
                 .Replace("__PLATFORM_JSON__", Serializer.Serialize(normalized));
             EnsureResolved(script, "__TRANSLATIONS_JSON__");
@@ -55,6 +70,12 @@ namespace CodexZhLauncher
             var locale = BuildLocaleScript("zh-CN");
             var windowsMenu = BuildMenuScriptForPlatform("windows");
             var macMenu = BuildMenuScriptForPlatform("macos");
+            var verification = BuildLocaleVerification("zh-CN");
+            EnsureResolved(verification, "__LOCALE_JSON__");
+            if (LocalizationRuntime.HasStatus("{\"status\":\"partial\",\"bootstrap\":{\"status\":\"ok\"}}", "ok") ||
+                LocalizationRuntime.HasStatus("invalid {\"status\":\"ok\"}", "ok") ||
+                !LocalizationRuntime.HasStatus("{\"status\":\"ok\",\"setting\":{\"status\":\"partial\"}}", "ok"))
+                throw new InvalidOperationException("汉化状态必须来自有效 JSON 的顶层 status。");
             if (bootstrap.IndexOf("72216192", StringComparison.Ordinal) < 0 ||
                 bootstrap.IndexOf("enable_i18n", StringComparison.Ordinal) < 0 ||
                 bootstrap.IndexOf("locale_source", StringComparison.Ordinal) < 0 ||
@@ -82,7 +103,7 @@ namespace CodexZhLauncher
             if (windowsMenu.IndexOf("app.asar", StringComparison.OrdinalIgnoreCase) >= 0 ||
                 macMenu.IndexOf("app.asar", StringComparison.OrdinalIgnoreCase) >= 0)
                 throw new InvalidOperationException("菜单脚本不应修改 app.asar。 ");
-            return "i18n-bootstrap=ok; locale-script=ok; menu-script=ok; translations=" + MergeTranslations("windows").Count +
+            return "i18n-bootstrap=ok; locale-script=ok; locale-verification=ok; status-parser=ok; menu-script=ok; translations=" + MergeTranslations("windows").Count +
                 "; macos-translations=" + MergeTranslations("macos").Count;
         }
 

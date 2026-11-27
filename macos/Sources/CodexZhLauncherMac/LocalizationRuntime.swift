@@ -49,14 +49,13 @@ struct LocalizationRuntime {
                 emit("正在启用 Codex 官方中文资源。", progress)
                 let bootstrap = try await installI18nBootstrap(selection: selected)
                 report.localeDetail = "bootstrap=\(bootstrap)"
-                guard hasStatus(bootstrap, "ok") else {
-                    throw RuntimeError.i18nBootstrapUnavailable(bootstrap)
-                }
+                // The old Statsig config is optional on modern Codex.
+                // Continue with official settings, then verify the rendered UI.
             }
             let setting = try await applyLocale(selection: selected, locale: locale)
             report.localeDetail = join(report.localeDetail, "setting=\(setting)")
             if hasStatus(setting, "ok") {
-                emit("语言设置已写入，正在刷新 Codex 界面。", progress)
+                emit("语言设置已确认，正在验证 Codex 界面。", progress)
             }
         } catch {
             report.localeDetail = join(report.localeDetail, "setting-error=\(error.localizedDescription)")
@@ -81,18 +80,18 @@ struct LocalizationRuntime {
         } catch {
             report.menuDetail = "menu-error=\(error.localizedDescription)"
         }
-        emit(report.menuApplied ? "原生菜单已覆盖当前全部标签。" : "仍有原生菜单未翻译，遗漏项已显示在日志中。", progress)
+        emit(report.menuApplied ? "原生菜单已覆盖当前全部标签。" : "菜单未通过完整验证，请查看日志中的具体原因。", progress)
 
         if report.complete {
             report.message = locale.lowercased().hasPrefix("zh")
                 ? "汉化完成：中文界面和当前全部原生菜单已生效。"
                 : "英文版已启动，语言设置已恢复。"
         } else if report.localeApplied {
-            report.message = "中文界面已生效，但原生菜单仍有未翻译项；详情请查看运行日志。"
+            report.message = "中文界面已验证，菜单尚未通过完整验证；请查看菜单详情。"
         } else if report.menuApplied && locale.lowercased().hasPrefix("zh") {
             report.message = "原生菜单已汉化，但中文界面状态未能确认；详情请查看运行日志。"
         } else {
-            report.message = "中文界面设置未生效，原生菜单仍有未翻译项；详情请查看运行日志。"
+            report.message = "中文界面和菜单尚未通过完整验证；请查看运行日志。"
         }
         logger.write("locale.detail \(report.localeDetail)")
         logger.write("menu.detail \(report.menuDetail)")
@@ -153,7 +152,7 @@ struct LocalizationRuntime {
         return try await devTools.evaluate(
             webSocketURL: socket,
             expression: resources.buildMenuScript(platform: "macos"),
-            awaitPromise: false
+            awaitPromise: true
         ) ?? ""
     }
 
@@ -174,28 +173,7 @@ struct LocalizationRuntime {
         )
         let target = selected.target
         guard let socket = target.webSocketDebuggerUrl else { throw RuntimeError.missingWebSocket }
-        let localeData = try JSONSerialization.data(withJSONObject: locale, options: [.fragmentsAllowed])
-        let encoded = String(decoding: localeData, as: UTF8.self)
-        let script = """
-        (async function () {
-          var requested = \(encoded);
-          var started = Date.now();
-          while ((!document.body || (document.body.innerText || '').length < 40) && Date.now() - started < 10000) {
-            await new Promise(function (resolve) { window.setTimeout(resolve, 200); });
-          }
-          var text = document.body ? document.body.innerText || '' : '';
-          var zhMarkers = ['新建任务', '拉取请求', '已安排', '插件', '设置', '搜索'];
-          var enMarkers = ['New task', 'Pull requests', 'Scheduled', 'Plugins', 'Settings', 'Search'];
-          var count = function (markers) { return markers.reduce(function (n, marker) { return n + (text.indexOf(marker) >= 0 ? 1 : 0); }, 0); };
-          var zhMatches = count(zhMarkers), enMatches = count(enMarkers);
-          var expectsChinese = requested.toLowerCase().indexOf('zh') === 0;
-          var documentLanguage = document.documentElement.lang || '';
-          var languageMatches = documentLanguage.toLowerCase().indexOf(expectsChinese ? 'zh' : 'en') === 0;
-          var markerMatches = expectsChinese ? (zhMatches > 0 && enMatches === 0) : enMatches > 0;
-          var bootstrapState = window.__codexZhI18nState || {};
-          return JSON.stringify({ status: (languageMatches || markerMatches) ? 'ok' : 'partial', requested: requested, targetType: \(encodedTargetType(target.type)), targetURL: location.href, navigatorLanguage: navigator.language, documentLanguage: documentLanguage, textLength: text.length, probeTextLength: \(selected.probe.textLength), zhMarkers: zhMatches, enMarkers: enMatches, i18nPatchedClients: bootstrapState.patchedClients || 0, i18nPatchedConfigs: bootstrapState.patchedConfigs || 0 });
-        })()
-        """
+        let script = try resources.buildLocaleVerification(locale: locale)
         return try await devTools.evaluate(webSocketURL: socket, expression: script, awaitPromise: true) ?? ""
     }
 

@@ -8,6 +8,7 @@ final class SharedResourcesTests: XCTestCase {
         let bootstrap = try resources.buildI18nBootstrap()
         let locale = try resources.buildLocaleScript(locale: "zh-CN")
         let menu = try resources.buildMenuScript(platform: "macos")
+        let verification = try resources.buildLocaleVerification(locale: "zh-CN")
 
         XCTAssertTrue(bootstrap.contains("72216192"))
         XCTAssertTrue(bootstrap.contains("enable_i18n"))
@@ -18,6 +19,10 @@ final class SharedResourcesTests: XCTestCase {
         XCTAssertFalse(bootstrap.contains("Object.defineProperty(globalThis, '__STATSIG__'"))
         XCTAssertTrue(locale.contains("localeOverride"))
         XCTAssertFalse(locale.contains("__LOCALE_JSON__"))
+        XCTAssertFalse(locale.contains("__ALLOW_RELOAD_JSON__"))
+        XCTAssertFalse(verification.contains("__LOCALE_JSON__"))
+        XCTAssertTrue(verification.contains("controlsInspected"))
+        XCTAssertTrue(verification.contains("otherMarkers === 0"))
         XCTAssertTrue(menu.contains("隐藏其他应用"))
         XCTAssertTrue(menu.contains("前置全部窗口"))
         XCTAssertTrue(menu.contains("粘贴并匹配样式"))
@@ -35,6 +40,7 @@ final class SharedResourcesTests: XCTestCase {
             to: root.appendingPathComponent("i18n-bootstrap.js"), atomically: true, encoding: .utf8
         )
         try "__LOCALE_JSON__".write(to: root.appendingPathComponent("locale-script.js"), atomically: true, encoding: .utf8)
+        try "".write(to: root.appendingPathComponent("app-services-script.js"), atomically: true, encoding: .utf8)
         try "var translations = __TRANSLATIONS_JSON__; var platform = __PLATFORM_JSON__;".write(
             to: root.appendingPathComponent("menu-script.js"), atomically: true, encoding: .utf8
         )

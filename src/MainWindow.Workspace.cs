@@ -109,6 +109,7 @@ namespace CodexZhLauncher
             options.Children.Add(ActionButton("以英文启动", async delegate { await LaunchEnglishWorkspaceAsync(); }));
             options.Children.Add(ActionButton("选择应用", async delegate { await SelectPortableAsync(); }));
             options.Children.Add(ActionButton("重新检测", async delegate { await DetectInstallAsync(); })); hero.Children.Add(options);
+            options.Children.Add(ActionButton("修复并验证（不重启）", async delegate { await VerifyRunningChineseAsync(); }));
             page.Children.Add(Card(hero));
             var quick = new UniformGridCompat();
             quick.Children.Add(ActionButton("下载与安装  →",delegate {ShowPage("下载 Codex");}));
@@ -124,6 +125,7 @@ namespace CodexZhLauncher
             { var item=Label(text,14); item.Margin=new Thickness(0,10,0,14); stack.Children.Add(item); }
             stack.Children.Add(Label("验证结果写入日志。页面与菜单分别确认，不把请求成功当成全部汉化完成。",12,false,true));
             stack.Children.Add(ActionButton("转到启动控制",delegate {ShowPage("概览");}));
+            stack.Children.Add(ActionButton("修复并验证当前会话（不重启）",async delegate {await VerifyRunningChineseAsync();}));
             stack.Children.Add(ActionButton("查看运行日志",delegate {ShowPage("日志诊断");})); page.Children.Add(Card(stack)); return page;
         }
         private UIElement BuildDownloadsPage()
@@ -137,6 +139,28 @@ namespace CodexZhLauncher
             var result=new StackPanel();cancelDownload=ActionButton("暂停下载",delegate {if(downloadCancellation!=null) downloadCancellation.Cancel();});cancelDownload.IsEnabled=false;result.Children.Add(cancelDownload);
             openDownload=ActionButton("重试系统安装",async delegate {await InstallVerifiedCodexAsync();});openDownload.IsEnabled=false;result.Children.Add(openDownload);
             result.Children.Add(ActionButton("打开社区镜像项目",delegate {OpenExternal("https://github.com/Wangnov/codex-app-mirror");})); page.Children.Add(Card(result)); return page;
+        }
+        private async Task VerifyRunningChineseAsync()
+        {
+            if(busy || currentInstall==null) return;
+            lastOperationError=null;
+            lastLaunchLocale="zh-CN";
+            SetBusy(true,"正在修复并验证当前会话","不会关闭或刷新 Codex 窗口");
+            try
+            {
+                var report=await LocalizationRuntime.LocalizeRunningAsync(currentInstall,
+                    message=>AppendLog(message,TextSecondary));
+                lastLaunchReport=report;
+                AppendLog("语言详情："+report.LocaleDetail,TextSecondary);
+                AppendLog("菜单详情："+report.MenuDetail,TextSecondary);
+                AppendLog(report.Message,report.Complete?Accent:Warning);
+            }
+            catch(Exception ex)
+            {
+                lastOperationError=ex.Message;
+                AppendLog("当前会话验证未完成："+ex.Message,Warning);
+            }
+            finally {SetBusy(false,null,null);UpdatePresentation();}
         }
         private UIElement BuildThemesPage()
         {

@@ -460,7 +460,7 @@ namespace CodexZhLauncher
                     var statusTitle = lastLaunchLocale == "en-US" ? (lastLaunchReport.Complete ? "英文版已启动" : "英文设置待确认") : lastLaunchReport.Complete
                         ? "汉化已完成，Codex 正在运行"
                         : lastLaunchReport.LocaleApplied
-                            ? "界面已汉化，菜单仍有遗漏"
+                            ? "界面已汉化，菜单待确认"
                             : lastLaunchReport.MenuApplied
                                 ? "菜单已汉化，界面待确认"
                                 : "汉化未完全生效";
@@ -505,7 +505,7 @@ namespace CodexZhLauncher
                     delegate(string message) { AppendLog(message, TextSecondary); });
                 lastLaunchReport = report;
                 AppendLog("界面语言：" + (report.LocaleApplied ? "已确认中文" : "未确认"), report.LocaleApplied ? Accent : Warning);
-                AppendLog("原生菜单：" + (report.MenuApplied ? "已全部覆盖" : "仍有未翻译项"), report.MenuApplied ? Accent : Warning);
+                AppendLog("原生菜单：" + (report.MenuApplied ? "已验证中文" : "尚未通过完整验证"), report.MenuApplied ? Accent : Warning);
                 if (!String.IsNullOrWhiteSpace(report.LocaleDetail))
                     AppendLog("语言详情：" + report.LocaleDetail, TextSecondary);
                 if (!String.IsNullOrWhiteSpace(report.MenuDetail))

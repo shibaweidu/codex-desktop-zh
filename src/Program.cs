@@ -8,8 +8,8 @@ using System.Windows;
 [assembly: System.Reflection.AssemblyCompany("Codex Localization Enhancer Community")]
 [assembly: System.Reflection.AssemblyProduct("Codex 汉化增强工具")]
 [assembly: System.Reflection.AssemblyCopyright("Copyright 2026")]
-[assembly: System.Reflection.AssemblyVersion("0.8.2.0")]
-[assembly: System.Reflection.AssemblyFileVersion("0.8.2.0")]
+[assembly: System.Reflection.AssemblyVersion("0.8.3.0")]
+[assembly: System.Reflection.AssemblyFileVersion("0.8.3.0")]
 
 namespace CodexZhLauncher
 {
@@ -74,6 +74,17 @@ namespace CodexZhLauncher
                 return;
             }
 
+            if (command == "--localize-running")
+            {
+                var report = LocalizationRuntime.LocalizeRunningAsync(install).GetAwaiter().GetResult();
+                Output(report.Message);
+                Output("locale=" + report.LocaleApplied + "; menu=" + report.MenuApplied);
+                Output("locale.detail " + report.LocaleDetail);
+                Output("menu.detail " + report.MenuDetail);
+                Environment.ExitCode = report.Complete ? 0 : 2;
+                return;
+            }
+
             if (command == "--launch-zh" || command == "--launch-en")
             {
                 var locale = command == "--launch-zh" ? "zh-CN" : "en-US";
@@ -86,7 +97,7 @@ namespace CodexZhLauncher
                 return;
             }
 
-            throw new ArgumentException("未知参数。可用参数：--diagnostics、--self-test、--launch-zh、--launch-en");
+            throw new ArgumentException("未知参数。可用参数：--diagnostics、--self-test、--launch-zh、--launch-en、--localize-running");
         }
 
         private static void PrintDiagnostics(CodexInstall install)

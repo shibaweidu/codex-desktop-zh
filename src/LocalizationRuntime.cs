@@ -9,6 +9,43 @@ namespace CodexZhLauncher
     {
         private static readonly JavaScriptSerializer Serializer = new JavaScriptSerializer();
 
+        public static async Task<LaunchReport> LocalizeRunningAsync(CodexInstall install, Action<string> onProgress = null)
+        {
+            var candidates = CodexProcessManager.Scan(install).Verified.FindAll(p => p.HasMainWindow);
+            foreach (var process in candidates)
+            {
+                var query = "$ErrorActionPreference='Stop'; $p=Get-CimInstance Win32_Process -Filter 'ProcessId=" + process.Id +
+                    "'; if($p){ [pscustomobject]@{commandLine=$p.CommandLine} | ConvertTo-Json -Compress }";
+                var result = await ProcessRunner.RunAsync("powershell.exe", "-NoProfile -NonInteractive -EncodedCommand " +
+                    Convert.ToBase64String(System.Text.Encoding.Unicode.GetBytes(query)));
+                var info = ParseObject(result.Output);
+                object line;
+                if (!result.Success || info == null || !info.TryGetValue("commandLine", out line)) continue;
+                var commandLine = Convert.ToString(line);
+                if (commandLine.IndexOf("--remote-debugging-address=127.0.0.1", StringComparison.Ordinal) < 0) continue;
+                var match = System.Text.RegularExpressions.Regex.Match(commandLine, @"(?:^|\s)--remote-debugging-port=(\d+)(?=\s|$)");
+                int port;
+                if (!match.Success || !Int32.TryParse(match.Groups[1].Value, out port) || port < 1 || port > 65535) continue;
+                var listenerQuery = "$ErrorActionPreference='Stop'; $x=Get-NetTCPConnection -State Listen -LocalPort " + port +
+                    " | Where-Object {$_.LocalAddress -eq '127.0.0.1' -and $_.OwningProcess -eq " + process.Id +
+                    "}; if($x){Write-Output 'owned'}";
+                var listener = await ProcessRunner.RunAsync("powershell.exe", "-NoProfile -NonInteractive -EncodedCommand " +
+                    Convert.ToBase64String(System.Text.Encoding.Unicode.GetBytes(listenerQuery)));
+                if (!listener.Success || listener.Output.Trim() != "owned") continue;
+                var stillCurrent = CodexProcessManager.Scan(install).Verified.Exists(p =>
+                    p.Id == process.Id && p.StartTimeUtcTicks == process.StartTimeUtcTicks &&
+                    String.Equals(p.ExecutablePath, process.ExecutablePath, StringComparison.OrdinalIgnoreCase));
+                if (!stillCurrent) continue;
+                // Live repair uses only the listener whose owner was verified above.
+                // Do not attach to an independently configured inspector endpoint.
+                var report = new LaunchReport { Started = true, ProcessId = (uint)process.Id, RendererPort = port,
+                    InspectorPort = 0, SessionInstall = install, SessionProcess = process };
+                ReportProgress(onProgress, "已验证当前 Codex 进程与回环接口，开始修复并验证；不关闭或重载会话。");
+                return await ApplyAndVerifyAsync(report, "zh-CN", onProgress, false);
+            }
+            throw new InvalidOperationException("当前 Codex 没有可验证的本地汉化接口。请保存工作后，通过“关闭并汉化重启”启动一次。");
+        }
+
         public static async Task<LaunchReport> LaunchAsync(
             CodexInstall install,
             string locale,
@@ -41,15 +78,19 @@ namespace CodexZhLauncher
             AppLog.Write("launch.started pid=" + report.ProcessId);
             ReportProgress(onProgress, "Codex 已启动，正在连接本地汉化接口。");
 
-            var localeTask = ApplyLocaleAsync(report.RendererPort, locale);
+            return await ApplyAndVerifyAsync(report, locale, onProgress);
+        }
+
+        private static async Task<LaunchReport> ApplyAndVerifyAsync(LaunchReport report, string locale, Action<string> onProgress, bool allowReload = true)
+        {
+            var localeTask = ApplyLocaleAsync(report.RendererPort, locale, allowReload);
             Task<string> menuTask = null;
             if (locale.Equals("zh-CN", StringComparison.OrdinalIgnoreCase))
-                menuTask = ApplyMenuAsync(report.InspectorPort);
+                menuTask = ApplyMenuAsync(report.RendererPort, report.InspectorPort);
 
             try
             {
                 report.LocaleDetail = await localeTask;
-                report.LocaleApplied = HasStatus(report.LocaleDetail, "ok");
             }
             catch (Exception ex)
             {
@@ -60,7 +101,7 @@ namespace CodexZhLauncher
             try
             {
                 var verification = await VerifyLocaleAsync(report.RendererPort, locale);
-                if (HasStatus(verification, "ok")) report.LocaleApplied = true;
+                report.LocaleApplied = HasStatus(verification, "ok");
                 report.LocaleDetail = JoinDetails(report.LocaleDetail, "verification=" + verification);
             }
             catch (Exception ex)
@@ -94,28 +135,33 @@ namespace CodexZhLauncher
             AppLog.Write("menu.detail " + report.MenuDetail);
             ReportProgress(onProgress, report.MenuApplied
                 ? "原生菜单已覆盖当前全部标签。"
-                : "仍有原生菜单未翻译，遗漏项已显示在日志中。");
+                : "菜单未通过完整验证，请查看日志中的具体原因。");
 
             if (report.Complete)
                 report.Message = locale == "zh-CN"
                     ? "汉化完成：中文界面和当前全部原生菜单已生效。"
                     : "英文版已启动，语言设置已恢复。";
             else if (report.LocaleApplied)
-                report.Message = "中文界面已生效，但原生菜单仍有未翻译项；详情请查看运行日志。";
+                report.Message = "中文界面已验证，菜单尚未通过完整验证；请查看菜单详情。";
             else if (report.MenuApplied && locale == "zh-CN")
                 report.Message = "原生菜单已汉化，但中文界面状态未能确认；详情请查看运行日志。";
             else
-                report.Message = "中文界面设置未生效，原生菜单仍有未翻译项；详情请查看运行日志。";
+                report.Message = "中文界面和菜单尚未通过完整验证；请查看运行日志。";
 
             AppLog.Write("launch.complete message=" + report.Message +
                 " locale=" + report.LocaleApplied + " menu=" + report.MenuApplied);
             return report;
         }
 
-        private static async Task<string> ApplyLocaleAsync(int port, string locale)
+        private static async Task<string> ApplyLocaleAsync(int port, string locale, bool allowReload)
         {
             var target = await WaitForRendererTargetAsync(port, TimeSpan.FromSeconds(25));
             AppLog.Write("renderer.target type=" + target.Type + " title=" + target.Title);
+            var modern = await DevToolsClient.EvaluateAsync(target.WebSocketDebuggerUrl,
+                LocalizationScripts.BuildAppServicesProbe(), true);
+            if (HasStatus(modern, "ok") || !allowReload)
+                return await DevToolsClient.EvaluateAsync(target.WebSocketDebuggerUrl,
+                    LocalizationScripts.BuildLocaleScript(locale, allowReload), true);
             if (locale.StartsWith("zh", StringComparison.OrdinalIgnoreCase))
             {
                 var bootstrap = LocalizationScripts.BuildI18nBootstrap();
@@ -126,8 +172,8 @@ namespace CodexZhLauncher
                     target.WebSocketDebuggerUrl,
                     bootstrap + ";\n" + I18nBootstrapWaitScript,
                     true);
-                if (!HasStatus(bootstrapResult, "ok"))
-                    throw new InvalidOperationException("Codex 官方中文资源引导未完成：" + bootstrapResult);
+                // Modern Codex can localize through settings even without the old
+                // Statsig config. Actual UI verification decides the final status.
 
                 var setting = await DevToolsClient.EvaluateAsync(
                     target.WebSocketDebuggerUrl,
@@ -176,33 +222,9 @@ namespace CodexZhLauncher
 
         private static async Task<string> VerifyLocaleAsync(int port, string locale)
         {
-            await Task.Delay(900);
             var target = await WaitForRendererTargetAsync(port, TimeSpan.FromSeconds(12));
-            var encodedLocale = Serializer.Serialize(locale);
-            var script = @"(function () {
-  var requested = " + encodedLocale + @";
-  var text = document.body ? document.body.innerText || '' : '';
-  var zhMarkers = ['新建任务', '拉取请求', '已安排', '插件'];
-  var enMarkers = ['New task', 'Pull requests', 'Scheduled', 'Plugins'];
-  var count = function (markers) {
-    return markers.reduce(function (total, marker) {
-      return total + (text.indexOf(marker) >= 0 ? 1 : 0);
-    }, 0);
-  };
-  var zhMatches = count(zhMarkers);
-  var enMatches = count(enMarkers);
-  var expectsChinese = requested.toLowerCase().indexOf('zh') === 0;
-  var ok = expectsChinese ? zhMatches >= 2 : enMatches >= 2;
-  return JSON.stringify({
-    status: ok ? 'ok' : 'partial',
-    requested: requested,
-    navigatorLanguage: navigator.language,
-    documentLanguage: document.documentElement.lang || '',
-    zhMarkers: zhMatches,
-    enMarkers: enMatches
-  });
-})()";
-            return await DevToolsClient.EvaluateAsync(target.WebSocketDebuggerUrl, script, false);
+            return await DevToolsClient.EvaluateAsync(target.WebSocketDebuggerUrl,
+                LocalizationScripts.BuildLocaleVerification(locale), true);
         }
 
         public static async Task<string> ApplyThemeAsync(LaunchReport report, string theme, int fontSize)
@@ -307,17 +329,36 @@ namespace CodexZhLauncher
             return values != null && values.TryGetValue(key, out value) ? Convert.ToInt32(value) : 0;
         }
 
-        private static async Task<string> ApplyMenuAsync(int port)
+        private static async Task<string> ApplyMenuAsync(int rendererPort, int inspectorPort)
         {
-            var target = await DevToolsClient.WaitForTargetAsync(port, "node", TimeSpan.FromSeconds(20));
+            string modern;
+            try
+            {
+                var renderer = await WaitForRendererTargetAsync(rendererPort, TimeSpan.FromSeconds(12));
+                modern = await DevToolsClient.EvaluateAsync(renderer.WebSocketDebuggerUrl,
+                    LocalizationScripts.BuildMenuScript(), true);
+                if (!HasStatus(modern, "unavailable")) return modern;
+            }
+            catch (Exception ex) { modern = "application-menu-service-error=" + ex.Message; }
+            DevToolsTarget target;
+            if (inspectorPort <= 0)
+                return Serializer.Serialize(new Dictionary<string, object> { {"status","unavailable"}, {"reason","menu-verification-unavailable"}, {"renderer",modern} });
+            try { target = await DevToolsClient.WaitForTargetAsync(inspectorPort, "node", TimeSpan.FromSeconds(5)); }
+            catch (Exception ex)
+            {
+                return Serializer.Serialize(new Dictionary<string, object> {
+                    {"status", "unavailable"}, {"reason", "menu-verification-unavailable"},
+                    {"renderer", modern}, {"inspector", ex.Message}
+                });
+            }
             AppLog.Write("main.target type=" + target.Type + " title=" + target.Title);
             return await DevToolsClient.EvaluateAsync(
                 target.WebSocketDebuggerUrl,
                 LocalizationScripts.BuildMenuScript(),
-                false);
+                true);
         }
 
-        private static bool HasStatus(string json, string expected)
+        internal static bool HasStatus(string json, string expected)
         {
             if (String.IsNullOrWhiteSpace(json)) return false;
             try
@@ -331,7 +372,7 @@ namespace CodexZhLauncher
             catch
             {
             }
-            return json.IndexOf("\"status\":\"" + expected + "\"", StringComparison.OrdinalIgnoreCase) >= 0;
+            return false;
         }
 
         private static string JoinDetails(string first, string second)
