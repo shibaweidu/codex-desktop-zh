@@ -1,5 +1,6 @@
 dist/
 obj/
+node_modules/
 .vs/
 .idea/
 TestResults/

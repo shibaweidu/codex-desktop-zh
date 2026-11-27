@@ -1,0 +1,5 @@
+{
+  "description": "Codex 汉化工具：支持 Windows/macOS Codex Desktop 中文界面、菜单翻译、客户端下载更新与主题配色。Codex Desktop Chinese localization tool.",
+  "homepage": "https://github.com/shibaweidu/codex-desktop-zh/releases/latest",
+  "topics": ["codex", "openai-codex", "codex-desktop", "codex-chinese", "chinese-localization", "localization", "i18n", "windows", "macos", "electron", "wpf", "swiftui"]
+}

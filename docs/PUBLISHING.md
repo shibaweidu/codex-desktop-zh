@@ -11,7 +11,7 @@ codex-desktop-zh
 推荐 Description：
 
 ```text
-Windows 与 macOS Codex Desktop 中文汉化增强工具，支持安全关闭、中文重启和原生菜单翻译。
+Codex 汉化工具：支持 Windows/macOS Codex Desktop 中文界面、菜单翻译、客户端下载更新与主题配色。Codex Desktop Chinese localization tool.
 ```
 
 推荐 Topics：
@@ -74,7 +74,7 @@ git push -u origin main
 
 ## 截图与 Social Preview
 
-建议使用 `0.5.0` 的 Windows 与 macOS 实际窗口截图，并确保截图中没有用户名、项目名称、路径、任务内容或其他个人信息。
+使用与页面描述版本一致的实际窗口截图，并确保截图中没有用户名、项目名称、路径、任务内容或其他个人信息。开发版截图必须说明版本与发布状态。当前 Windows 实拍为 `docs/images/codex-zh-launcher-overview.png`，对应 v0.8.3 本地开发版。
 
 推荐文件：
 
@@ -131,3 +131,7 @@ SHA256SUMS.txt
 - README 的兼容性和已知限制准确
 - 明确标注非 OpenAI 官方项目
 - macOS 未关闭 Gatekeeper、未清除 quarantine、未修改 Codex.app
+
+## 本轮页面内容
+
+仓库简介与 Topics 的可审阅配置见 [GITHUB-PRESENTATION.json](GITHUB-PRESENTATION.json)，v0.8.2 的用户更新说明见 [releases/v0.8.2.md](releases/v0.8.2.md)。这些内容优化有助于用户理解和 GitHub 站内发现，不保证搜索引擎收录或排名。当前没有在本轮创建 GitHub Pages 站点。

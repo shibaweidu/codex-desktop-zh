@@ -4,24 +4,34 @@ English | [简体中文](README.md)
 
 ![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS-5B8DEF)
 ![Architecture](https://img.shields.io/badge/architecture-x64%20%7C%20arm64-6D7280)
-![Version](https://img.shields.io/badge/version-v0.8.2-C4B5FD)
+[![Release](https://img.shields.io/github/v/release/shibaweidu/codex-desktop-zh?color=C4B5FD)](https://github.com/shibaweidu/codex-desktop-zh/releases/latest)
 ![License](https://img.shields.io/badge/license-MIT-31B77A)
 
 **Codex Desktop Chinese Localization Enhancer** is a Windows and macOS launcher for enabling the Chinese UI and translating native Electron menus in Codex Desktop. It supports Microsoft Store, portable, and macOS App Bundle installations, verified process shutdown, and automatic restart in Chinese mode.
 
-The tool does not unpack or replace `app.asar`, modify the Microsoft Store installation, or read Codex accounts, tokens, and project files.
+Localization does not unpack or replace `app.asar`, modify the Microsoft Store installation, or read Codex accounts, tokens, and project files. A separately confirmed Codex client update deploys a new package or replaces Codex.app.
 
-## v0.8 development preview
+## Download
+
+[Windows x64 EXE](https://github.com/shibaweidu/codex-desktop-zh/releases/latest/download/Codex-Zh-Launcher-Windows-x64.exe) · [macOS Apple Silicon ZIP](https://github.com/shibaweidu/codex-desktop-zh/releases/latest/download/Codex-Zh-Launcher-macOS-arm64.zip) · [macOS Intel ZIP](https://github.com/shibaweidu/codex-desktop-zh/releases/latest/download/Codex-Zh-Launcher-macOS-x64.zip) · [SHA256SUMS.txt](https://github.com/shibaweidu/codex-desktop-zh/releases/latest/download/SHA256SUMS.txt)
+
+The latest published release is v0.8.2. Version 0.8.3 is currently a local development build: it adapts to newer Codex settings and Windows menu services, corrects language verification, and adds Windows repair without restarting. These changes are not available in the release downloads yet.
+
+![Windows dark workspace showing successful Chinese UI and menu verification](docs/images/codex-zh-launcher-overview.png)
+
+Actual v0.8.3 development screenshot with Codex 26.1120.6357.0. All 46 labels in the inspected menu snapshot passed; this does not promise coverage of every page, third-party plugin description, or future release.
+
+## Client updates and appearance
 
 Version 0.8.2 adds direct mirror downloads, resume support, and package cache reuse to the Windows Codex updater. The updater checks the current user's registered package after deployment and shows Windows errors when deployment fails.
 
-Version 0.8.0 adds a native WPF / SwiftUI five-page workspace for Overview, Codex updates, Localization, Appearance, and Diagnostics. Windows downloads and verifies an update before user confirmation; macOS additionally requires the release workflow to pass both architecture builds and tests. Check GitHub Releases and CI for publication status.
+The native WPF / SwiftUI workspace provides Overview, Codex updates, Localization, Appearance, and Diagnostics. Client updates and launcher updates are separate operations. See the [update guide](docs/UPDATES.md) (Chinese).
 
 Codex client updates use the Wangnov community mirror on both platforms. The launcher detects the local version and CPU architecture, skips downloads when current, and downloads and verifies an available update. Windows compares MSIX package versions, resumes interrupted downloads, and reuses verified packages for the same version. After confirmation, Windows deploys with AppX and checks the registered version for the current account. macOS compares the app version and build number, verifies Apple signing, Team ID and architecture, then replaces and restarts Codex after confirmation. The system Applications directory may require macOS administrator authorization. Windows installation requires closing Codex first. Update portable Windows builds through their original installation channel.
 
 Six reversible runtime color presets apply to launcher-created, process-verified sessions. A full page refresh can remove the runtime style.
 
-Windows isolated service and browser-fixture tests have run locally. The new macOS implementation and tests still require a Mac/CI build and Apple Silicon/Intel manual acceptance. See [native verification](docs/NATIVE-v0.8-VERIFICATION.md).
+Published releases include both Mac architectures. The current v0.8.3 changes have passed Windows builds, isolated tests, and local integration; updated macOS code still requires Mac/CI and real-device verification. See the [v0.8.3 acceptance record](docs/LOCALIZATION-v0.8.3.md) (Chinese).
 
 ## Features
 
@@ -42,7 +52,7 @@ Windows isolated service and browser-fixture tests have run locally. The new mac
 
 ## Download and Usage
 
-Download the matching asset and `SHA256SUMS.txt` from [GitHub Releases](../../releases/latest):
+Download the matching asset and `SHA256SUMS.txt` from [GitHub Releases](https://github.com/shibaweidu/codex-desktop-zh/releases/latest):
 
 | System | Asset |
 |---|---|
@@ -69,9 +79,9 @@ The shutdown sequence requests a graceful exit, waits five seconds, revalidates 
 The launcher allocates two random loopback ports for each Codex session:
 
 - Chromium DevTools for applying the official `localeOverride` setting
-- Electron main-process inspector for translating native menus in memory
+- Renderer menu services on newer Windows clients, with Electron main-process inspector support for older Windows clients and macOS (v0.8.3 source behavior)
 
-Both endpoints bind to `127.0.0.1`. No Codex installation files are changed.
+Both endpoints bind to `127.0.0.1`. Localization and color presets do not change Codex installation files.
 
 ## Compatibility
 

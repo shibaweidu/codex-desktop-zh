@@ -20,6 +20,7 @@ macOS 开发需要 macOS 13+、Xcode Command Line Tools 和 Swift 5.9。真实 C
 ```powershell
 powershell -NoProfile -ExecutionPolicy Bypass -File .\build.ps1
 powershell -NoProfile -ExecutionPolicy Bypass -File .\test-shutdown.ps1
+powershell -NoProfile -ExecutionPolicy Bypass -File .\test-workspace.ps1
 ```
 
 然后运行：
@@ -37,6 +38,23 @@ bash scripts/build-macos.sh "$(uname -m)"
 ```
 
 `test-shutdown.ps1` 只使用临时测试进程，不应关闭用户当前运行的真实 Codex。
+
+共享脚本的隔离浏览器回归测试使用 Node.js 和 Playwright：
+
+```powershell
+npm install --no-save --package-lock=false playwright@1.62.1
+npx playwright install chromium
+node tests/theme-script.test.cjs
+node tests/localization-script.test.cjs
+```
+
+测试使用临时页面与伪造服务，不连接真实 Codex。Windows v0.8.3 新增 `--localize-running`，该命令会实际修复当前客户端，仅用于明确的人工集成验收；没有可验证的本地接口时不会关闭或刷新会话。`--launch-zh` / `--launch-en` 会实际启动客户端。
+
+## 源码与发布文件
+
+提交 `src/`、`tests/`、`macos/`、`shared/`、`scripts/`、`.github/`、PowerShell 构建/测试脚本、文档与许可证。共享脚本必须随构建嵌入 EXE 或复制到 App Bundle，不能仅提交平台代码。
+
+不要提交 `dist/`、`obj/`、`node_modules/`、`macos/.build/`、`macos/.artifacts/`、日志、凭据、用户配置或 Codex 官方安装文件。Release 资产命名与发布步骤见 [发布说明](docs/PUBLISHING.md)。
 
 ## 提交菜单翻译
 
